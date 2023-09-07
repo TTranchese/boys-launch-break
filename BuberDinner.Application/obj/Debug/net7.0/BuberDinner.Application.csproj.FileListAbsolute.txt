@@ -1,0 +1,15 @@
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\bin\Debug\net7.0\BuberDinner.Application.deps.json
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\bin\Debug\net7.0\BuberDinner.Application.dll
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\bin\Debug\net7.0\BuberDinner.Application.pdb
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\bin\Debug\net7.0\BuberDinner.Domain.dll
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\bin\Debug\net7.0\BuberDinner.Domain.pdb
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.csproj.AssemblyReference.cache
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.AssemblyInfoInputs.cache
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.AssemblyInfo.cs
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.csproj.CoreCompileInputs.cache
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.csproj.CopyComplete
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.dll
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\refint\BuberDinner.Application.dll
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\BuberDinner.Application.pdb
+C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Application\obj\Debug\net7.0\ref\BuberDinner.Application.dll
