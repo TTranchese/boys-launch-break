@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BuberDinner.Contracts.Authentication;
+using BuberDinner.Application.Services.Authentication;
 namespace BuberDinner.Api.Controllers;
 
 [ApiController]
@@ -16,8 +17,8 @@ public class AuthenticationController : ControllerBase
     {
         var authResult = _authenticationService.Register(
             request.FirstName,
-            request.LastName, 
-            request.Email, 
+            request.LastName,
+            request.Email,
             request.Password);
 
         var response = new AuthenticationResponse(

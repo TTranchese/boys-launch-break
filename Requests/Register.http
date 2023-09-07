@@ -1,5 +1,5 @@
 POST http://localhost:5064/auth/register
-Content-Type: "application/json"
+Content-Type: application/json
 
 {
     "firstName": "Amichai",
