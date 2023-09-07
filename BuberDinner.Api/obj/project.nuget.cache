@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "2gtG0rQGxby8WH9TBoN8rIJfoEqjddgk/Mu8Dr8rXK3wgL0M+xgiOn02xM9M+Xlkv5XdDSjaEgrs9pC7qIYNyA==",
+  "dgSpecHash": "JGS+NEyoGcO6A2suwI1XtHPLyok4Ir7LKsiMwle2OAZoqSdwoPo/BG8XPWvZvvbWG2wti1C+aRvLMoDZQNt2Ew==",
   "success": true,
-  "projectFilePath": "C:\\Users\\tomma\\Desktop\\DotNetProjects\\BuberDinner\\BuberDinner.Api\\BuberDinner.Api.csproj",
+  "projectFilePath": "C:\\Users\\Tommaso\\Projects\\BurberDinner\\BuberDinner\\BuberDinner.Api\\BuberDinner.Api.csproj",
   "expectedPackageFiles": [],
   "logs": []
 }

@@ -33,3 +33,12 @@ C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Api\obj\Debug\net7
 C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.pdb
 C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.genruntimeconfig.cache
 C:\Users\tomma\Desktop\DotNetProjects\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\ref\BuberDinner.Api.dll
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.csproj.AssemblyReference.cache
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.AssemblyInfoInputs.cache
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.AssemblyInfo.cs
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.csproj.CoreCompileInputs.cache
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.MvcApplicationPartsAssemblyInfo.cache
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.dll
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\refint\BuberDinner.Api.dll
+C:\Users\Tommaso\Projects\BurberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.pdb
