@@ -6,7 +6,7 @@ public static class DependecyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR(typeof(DependecyInjection).Assembly);
+        services.AddMediatR(x => x.RegisterServicesFromAssemblies(typeof(DependecyInjection).Assembly));
         return services;
     }
 }
