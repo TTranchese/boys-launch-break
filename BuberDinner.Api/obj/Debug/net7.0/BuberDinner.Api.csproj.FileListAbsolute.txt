@@ -82,3 +82,4 @@ C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Microsoft.IdentityModel.Logging.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\ErrorOr.dll
