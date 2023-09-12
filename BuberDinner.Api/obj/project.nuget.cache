@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "93GkyW1eIejT4lUUPuDzwpbACsDSYEuEhizW+U97aGx7Xbw0SIUWUc6V+GgLQWQIYFXStOJsU4ald6LULeffCA==",
+  "dgSpecHash": "ENRywd0AGeUO+EQsiJV0UM6bBTR+U9SgKujBch2rNZ+f5Q/ptHYZr3JOLcM8oOEYdsbqEVNpPHWfa7e0GJ4pdw==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Tommaso\\Projects\\BuberDinner\\BuberDinner\\BuberDinner.Api\\BuberDinner.Api.csproj",
+  "projectFilePath": "c:\\Users\\Tommaso\\Projects\\BuberDinner\\BuberDinner\\BuberDinner.Api\\BuberDinner.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Tommaso\\.nuget\\packages\\erroror\\1.2.1\\erroror.1.2.1.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\mapster\\7.3.0\\mapster.7.3.0.nupkg.sha512",

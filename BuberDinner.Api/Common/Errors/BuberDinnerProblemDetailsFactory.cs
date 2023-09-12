@@ -91,13 +91,13 @@ public class BuberDinnerProblemDetailsFactory : ProblemDetailsFactory
             problemDetails.Extensions["traceId"] = traceId;
         }
         _configure?.Invoke(new() { HttpContext = httpContext!, ProblemDetails = problemDetails });
-        
-        
+
+
         var errors = httpContext?.Items[HttpContextItemKeys.Errors] as List<Error>;
-        if(errors is not null)
+        if (errors is not null)
         {
-            problemDetails.Extensions.Add("errorCodes", errors.Select(e=>e.Code));
+            problemDetails.Extensions.Add("errorCodes", errors.Select(e => e.Code));
         }
-        
+
     }
 }

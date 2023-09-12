@@ -10,6 +10,6 @@ public static partial class Errors
             code: "User.DuplicateEmail",
             description: "Email already in use"
         );
-        
+
     }
 }

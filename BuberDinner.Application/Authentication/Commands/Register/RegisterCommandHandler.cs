@@ -21,27 +21,27 @@ namespace BuberDinner.Application.Authentication.Commands.Register
         {
             await Task.CompletedTask;
             //Validate the user doesn't exist
-        if (_userRepository.GetUserByEmail(command.Email) is not null)
-        {
-            return Domain.Common.Errors.Errors.User.DuplicateEmail;
-        }
-        //Create user, generate unique ID, save to db
-        var user = new User()
-        {
-            FirstName = command.FirstName,
-            LastName = command.LastName,
-            Email = command.Email,
-            Password = command.Password
-        };
-        _userRepository.Add(user);
+            if (_userRepository.GetUserByEmail(command.Email) is not null)
+            {
+                return Domain.Common.Errors.Errors.User.DuplicateEmail;
+            }
+            //Create user, generate unique ID, save to db
+            var user = new User()
+            {
+                FirstName = command.FirstName,
+                LastName = command.LastName,
+                Email = command.Email,
+                Password = command.Password
+            };
+            _userRepository.Add(user);
 
-        //Create jwt token
+            //Create jwt token
 
-        var token = _jwtTokenGenerator.GenerateToken(user);
-        return new AuthenticationResult(
-            user,
-            token
-        );
+            var token = _jwtTokenGenerator.GenerateToken(user);
+            return new AuthenticationResult(
+                user,
+                token
+            );
         }
     }
 }

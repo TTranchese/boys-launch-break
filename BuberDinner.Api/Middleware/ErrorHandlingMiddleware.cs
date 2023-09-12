@@ -26,10 +26,10 @@ public class ErrorHandlingMiddleware
     private Task HandleExceptionAsync(HttpContext context, Exception ex)
     {
         var code = HttpStatusCode.InternalServerError; //status code 500
-        var result = JsonSerializer.Serialize(new { error = "An error occured while attempting your request!"});
+        var result = JsonSerializer.Serialize(new { error = "An error occured while attempting your request!" });
         context.Response.ContentType = "application/json";
-        context.Response.StatusCode = (int) code;
+        context.Response.StatusCode = (int)code;
         return context.Response.WriteAsync(result);
-        
+
     }
 }
