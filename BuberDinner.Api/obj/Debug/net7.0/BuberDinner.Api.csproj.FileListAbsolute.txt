@@ -86,3 +86,6 @@ C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\MediatR.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\MediatR.Contracts.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\MediatR.Extensions.Microsoft.DependencyInjection.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.Core.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.DependencyInjection.dll

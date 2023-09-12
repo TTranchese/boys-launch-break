@@ -19,23 +19,24 @@ namespace BuberDinner.Application.Authentication.Queries.Login
 
         public async Task<ErrorOr<AuthenticationResult>> Handle(LoginQuery query, CancellationToken cancellationToken)
         {
+            await Task.CompletedTask;
             //Check if user exists
-        if (_userRepository.GetUserByEmail(query.Email) is not User user)
-        {
-            return Domain.Common.Errors.Errors.Authentication.InvalidCredentials;
-        }
-        //Check if password is correct
-        if (user.Password != query.Password)
-        {
-            return Domain.Common.Errors.Errors.Authentication.InvalidCredentials;
-        }
-        //Create jwt token and return it to the user
-        var token = _jwtTokenGenerator.GenerateToken(user);
+            if (_userRepository.GetUserByEmail(query.Email) is not User user)
+            {
+                return Domain.Common.Errors.Errors.Authentication.InvalidCredentials;
+            }
+            //Check if password is correct
+            if (user.Password != query.Password)
+            {
+                return Domain.Common.Errors.Errors.Authentication.InvalidCredentials;
+            }
+            //Create jwt token and return it to the user
+            var token = _jwtTokenGenerator.GenerateToken(user);
 
-        return new AuthenticationResult(
-            user,
-            token
-        );
+            return new AuthenticationResult(
+                user,
+                token
+            );
         }
     }
 }
