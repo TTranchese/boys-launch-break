@@ -13,10 +13,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR(x => x.RegisterServicesFromAssemblies(typeof(DependencyInjection).Assembly));
-        services.AddScoped<
-        IPipelineBehavior<RegisterCommand, ErrorOr<AuthenticationResult>>,
-        ValidateRegisterCommandBehavior>();
+        services.AddMediatR(Assembly.GetExecutingAssembly());
+        services.AddScoped(
+            typeof(IPipelineBehavior<,>),
+            typeof(ValidationBehavior<,>)
+            );
         services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
         return services;
     }

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -6,6 +7,7 @@ namespace BuberDinner.Api.Controllers;
 public class ErrorController : ApiController
 {
     [Route("/error")]
+    [AllowAnonymous]
     public IActionResult Error()
     {
         Exception? exception = HttpContext.Features.Get<IExceptionHandlerFeature>()?.Error;

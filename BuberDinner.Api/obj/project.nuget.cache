@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "vqiq3EoR2GBMUUoic3v2A4AOf2tAjEvFqiGW66xlwuyjBaX68EJknngnxB1WGOX676HrTTf96cVwuOi15ql9Jw==",
+  "dgSpecHash": "uIcAjB7IOo93FAFkYhyIexTHR0q6TxOeRlreE62lELwYP9hfVQeHvhDD36CpLJsiWjSIlTMy912WpCD1VNeVNg==",
   "success": true,
   "projectFilePath": "C:\\Users\\Tommaso\\Projects\\BuberDinner\\BuberDinner\\BuberDinner.Api\\BuberDinner.Api.csproj",
   "expectedPackageFiles": [
@@ -11,9 +11,10 @@
     "C:\\Users\\Tommaso\\.nuget\\packages\\mapster\\7.3.0\\mapster.7.3.0.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\mapster.core\\1.2.0\\mapster.core.1.2.0.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\mapster.dependencyinjection\\1.0.0\\mapster.dependencyinjection.1.0.0.nupkg.sha512",
-    "C:\\Users\\Tommaso\\.nuget\\packages\\mediatr\\12.1.1\\mediatr.12.1.1.nupkg.sha512",
-    "C:\\Users\\Tommaso\\.nuget\\packages\\mediatr.contracts\\2.0.1\\mediatr.contracts.2.0.1.nupkg.sha512",
+    "C:\\Users\\Tommaso\\.nuget\\packages\\mediatr\\11.1.0\\mediatr.11.1.0.nupkg.sha512",
+    "C:\\Users\\Tommaso\\.nuget\\packages\\mediatr.contracts\\1.0.1\\mediatr.contracts.1.0.1.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\mediatr.extensions.microsoft.dependencyinjection\\11.1.0\\mediatr.extensions.microsoft.dependencyinjection.11.1.0.nupkg.sha512",
+    "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\7.0.11\\microsoft.aspnetcore.authentication.jwtbearer.7.0.11.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.csharp\\4.5.0\\microsoft.csharp.4.5.0.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.extensions.configuration\\7.0.0\\microsoft.extensions.configuration.7.0.0.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.extensions.configuration.abstractions\\7.0.0\\microsoft.extensions.configuration.abstractions.7.0.0.nupkg.sha512",
@@ -25,6 +26,8 @@
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.abstractions\\6.32.3\\microsoft.identitymodel.abstractions.6.32.3.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.jsonwebtokens\\6.32.3\\microsoft.identitymodel.jsonwebtokens.6.32.3.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.logging\\6.32.3\\microsoft.identitymodel.logging.6.32.3.nupkg.sha512",
+    "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.protocols\\6.15.1\\microsoft.identitymodel.protocols.6.15.1.nupkg.sha512",
+    "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.protocols.openidconnect\\6.15.1\\microsoft.identitymodel.protocols.openidconnect.6.15.1.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.identitymodel.tokens\\6.32.3\\microsoft.identitymodel.tokens.6.32.3.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.netcore.platforms\\1.1.0\\microsoft.netcore.platforms.1.1.0.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\microsoft.netcore.targets\\1.1.0\\microsoft.netcore.targets.1.1.0.nupkg.sha512",
@@ -41,16 +44,5 @@
     "C:\\Users\\Tommaso\\.nuget\\packages\\system.text.json\\4.7.2\\system.text.json.4.7.2.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\system.threading.tasks\\4.3.0\\system.threading.tasks.4.3.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1608",
-      "level": "Warning",
-      "warningLevel": 1,
-      "message": "Detected package version outside of dependency constraint: MediatR.Extensions.Microsoft.DependencyInjection 11.1.0 requires MediatR (>= 11.0.0 && < 12.0.0) but version MediatR 12.1.1 was resolved.",
-      "libraryId": "MediatR",
-      "targetGraphs": [
-        "net7.0"
-      ]
-    }
-  ]
+  "logs": []
 }
