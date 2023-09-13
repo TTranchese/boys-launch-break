@@ -89,3 +89,7 @@ C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.Core.dll
 C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\Mapster.DependencyInjection.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\FluentValidation.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\FluentValidation.AspNetCore.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\bin\Debug\net7.0\FluentValidation.DependencyInjectionExtensions.dll
+C:\Users\Tommaso\Projects\BuberDinner\BuberDinner\BuberDinner.Api\obj\Debug\net7.0\BuberDinner.Api.MvcApplicationPartsAssemblyInfo.cs
