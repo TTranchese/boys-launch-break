@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "m5Q7F3mNFi3SQpLWP+bYm0CTLQFtKBM0rv84C2wbfREhgz0vUkUUahWy7mPBnN1dUmBGHioOScGMGYg6aJIVlQ==",
+  "dgSpecHash": "Hni1bmZgksA2bjnMv3q46myQGqJ61T4kbw0voJfzs3LazcT3tpYH+ju8e2SzdPxYbdVpW8L1HSS4lshGlz7UBg==",
   "success": true,
-  "projectFilePath": "c:\\Users\\Tommaso\\Projects\\BuberDinner\\BuberDinner\\BuberDinner.Infrastructure\\BuberDinner.Infrastructure.csproj",
+  "projectFilePath": "C:\\Users\\Tommaso\\Projects\\BuberDinner\\BuberDinner\\BuberDinner.Infrastructure\\BuberDinner.Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Tommaso\\.nuget\\packages\\erroror\\1.2.1\\erroror.1.2.1.nupkg.sha512",
     "C:\\Users\\Tommaso\\.nuget\\packages\\fluentvalidation\\11.7.1\\fluentvalidation.11.7.1.nupkg.sha512",
