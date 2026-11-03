@@ -43,6 +43,7 @@ type Me = { id: string; name: string; lat?: number; lng?: number };
 export default function DinnerApp() {
   const [desktop, setDesktop] = useState(false);
   const [mapReady, setMapReady] = useState(false);
+  const locationField = useRef<HTMLDivElement>(null);
   const positionStatus = useRef<HTMLParagraphElement>(null);
   const selectedPlaceButton = useRef<HTMLButtonElement>(null);
   const mapDialog = useRef<HTMLDialogElement>(null);
@@ -68,6 +69,17 @@ export default function DinnerApp() {
   const [draftLabel, setDraftLabel] = useState<string | null>(null);
   const meRef = useRef<Me | null>(null);
   meRef.current = me;
+
+  useEffect(() => {
+    if (results === null) return;
+    const dismissOutside = (event: PointerEvent) => {
+      if (!locationField.current?.contains(event.target as Node)) {
+        setResults(null);
+      }
+    };
+    document.addEventListener("pointerdown", dismissOutside);
+    return () => document.removeEventListener("pointerdown", dismissOutside);
+  }, [results]);
 
   useEffect(() => {
     if (mapMode) {
@@ -393,7 +405,17 @@ export default function DinnerApp() {
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </label>
-          <div className="field">
+          <div className="field location-field" ref={locationField}
+            onBlur={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget)) setResults(null);
+            }}
+            onKeyDown={(e) => {
+            if (e.key === "Escape" && results !== null) {
+              e.preventDefault();
+              setResults(null);
+              document.getElementById("location-search")?.focus();
+            }
+          }}>
             <label htmlFor="location-search">Your town or address</label>
             <form
               className="row gap location-search"
@@ -403,6 +425,7 @@ export default function DinnerApp() {
                 className="grow"
                 id="location-search"
                 type="search"
+                aria-controls={results ? "location-results" : undefined}
                 value={query}
                 placeholder="e.g. Empoli"
                 onChange={(e) => setQuery(e.target.value)}
@@ -420,17 +443,29 @@ export default function DinnerApp() {
                   : <Search className="app-icon" aria-hidden="true" />}
               </button>
             </form>
+            {results && (
+              <ul className="results" id="location-results" aria-label="Location results">
+                {results.length === 0 && (
+                  <li className="results__empty muted small" role="status">
+                    No places found in Tuscany. Try a nearby town.
+                  </li>
+                )}
+                {results.map((r) => {
+                  const [place, ...address] = r.label.split(",");
+                  return (
+                    <li key={r.id}>
+                      <button className="results__option" onClick={() => pickResult(r)}>
+                        <span className="results__name">{place}</span>
+                        {address.length > 0 && (
+                          <span className="results__context">{address.join(",").trim()}</span>
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
-          {results && (
-            <ul className="results">
-              {results.length === 0 && <li className="muted small">No places found in Tuscany.</li>}
-              {results.map((r) => (
-                <li key={r.id}>
-                  <button onClick={() => pickResult(r)}>{r.label}</button>
-                </li>
-              ))}
-            </ul>
-          )}
           <div className="location-options">
             <button className="btn ghost" onClick={useMyLocation} disabled={locating}>
               <CrosshairIcon />{locating ? "Locating…" : "My location"}

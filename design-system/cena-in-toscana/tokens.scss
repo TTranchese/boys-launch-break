@@ -74,11 +74,12 @@
     color-scheme: light;
     --color-canvas: var(--neutral-25);
     --color-surface: var(--neutral-0);
+    --color-elevated: var(--neutral-0);
     --color-subtle: var(--neutral-100);
     --color-text: var(--neutral-950);
     --color-muted: var(--neutral-600);
     --color-border: var(--neutral-200);
-    --color-panel-border: #eaedf0;
+    --color-surface-border: #eaedf0;
     --color-field-edge: #848c98;
     --color-control-border: var(--neutral-500);
     --color-action: var(--neutral-850);
@@ -115,11 +116,12 @@
     color-scheme: dark;
     --color-canvas: var(--neutral-1000);
     --color-surface: var(--neutral-900);
+    --color-elevated: var(--neutral-800);
     --color-subtle: var(--neutral-800);
     --color-text: var(--neutral-50);
     --color-muted: var(--neutral-400);
     --color-border: var(--neutral-700);
-    --color-panel-border: #2c323a;
+    --color-surface-border: #2c323a;
     --color-field-edge: #626e7d;
     --color-control-border: #707b8a;
     --color-action: var(--neutral-100);
@@ -158,7 +160,7 @@
     --button-height: 44px;
     --button-radius: var(--radius-control);
     --field-bg: var(--color-canvas);
-    --field-border: var(--color-panel-border);
+    --field-border: var(--color-surface-border);
     --field-edge: var(--color-field-edge);
     --field-height: 48px;
     --search-control-size: max(
@@ -166,8 +168,16 @@
         calc(var(--text-body) * var(--leading-body)
             + var(--space-3) * 2 + var(--border-width) * 2)
     );
+    --results-bg: var(--color-elevated);
+    --results-border: var(--color-surface-border);
+    --results-shadow: var(--shadow-overlay);
+    --results-max-height: min(calc(var(--space-unit) * 40), 40dvh);
+    --results-offset: var(--space-2);
+    --results-radius: var(--radius-control);
+    --results-item-radius: var(--radius-small);
+    --results-item-hover: var(--color-subtle);
     --panel-bg: var(--color-surface);
-    --panel-border: var(--color-panel-border);
+    --panel-border: var(--color-surface-border);
     --panel-padding-compact: var(--space-4);
     --panel-padding-comfortable: var(--space-6);
     --panel-padding: var(--panel-padding-compact);

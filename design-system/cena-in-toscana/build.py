@@ -41,6 +41,7 @@ def resolve(tokens, key):
 
 pairs = [
     ("text", "canvas", 4.5), ("text", "surface", 4.5),
+    ("text", "elevated", 4.5), ("muted", "elevated", 4.5),
     ("muted", "surface", 4.5), ("muted", "canvas", 4.5),
     ("muted", "subtle", 4.5), ("muted", "selected", 4.5),
     ("on-action", "action", 4.5), ("on-action", "action-hover", 4.5),

@@ -26,7 +26,7 @@ White panels on a cool off-white canvas; near-black primary actions; a restraine
 | Text | #191c20 | #f4f5f6 | Headings, names, values |
 | Muted text | #5c6470 | #adb5c1 | Supporting copy; still readable |
 | Divider | #dce0e5 | #414955 | Decorative boundaries only |
-| Card boundary | #eaedf0 | #2c323a | Quiet panel outlines |
+| Surface boundary | #eaedf0 | #2c323a | Quiet panel and search-results outlines |
 | Field edge | #848c98 | #626e7d | Input bottom boundary |
 | Control border | #7b8491 | #707b8a | Inputs and required control boundaries |
 | Action / on action | #22262c / #ffffff | #eef0f3 / #191c20 | Primary CTA |
@@ -36,7 +36,7 @@ White panels on a cool off-white canvas; near-black primary actions; a restraine
 | Warning / subtle | #805300 / #fff6df | #f0cd7a / #302714 | Estimated times |
 | Danger / subtle | #b32935 / #fff0f1 | #ffacb4 / #361e23 | Field errors, failed requests |
 
-Colors are implemented in `tokens.scss`. Components consume semantic or component variables, never raw palette values. Dark mode remaps semantic roles; it is not a CSS inversion. Cards use the quieter `--panel-border` rather than the general divider. Fields use the canvas fill, a quiet perimeter, and a contrasting bottom edge; the bottom edge defines the control boundary without a strong four-sided box. Focus has a 3px outline with 3px offset. Muted text is not disabled text. Disabled controls use native disabled semantics, explicit styling, and nearby explanation where the reason is not obvious.
+Colors are implemented in `tokens.scss`. Components consume semantic or component variables, never raw palette values. Dark mode remaps semantic roles; it is not a CSS inversion. Cards and search results share `--color-surface-border` through component aliases. These decorative outlines stay quiet; `--color-control-border` is reserved for boundaries needed to identify controls. Search results float beneath the search field, outside document flow, using `--color-elevated`, `--shadow-overlay`, and `--layer-popover`. Opening and closing the popup must not move surrounding content. The list has a viewport-bounded scroll area and dismisses on Escape, outside press, or focus leaving the search group. It has no row dividers, with a prominent place name and muted, wrapping address details. Each result retains a visible inset keyboard focus indicator. Fields use the canvas fill, a quiet perimeter, and a contrasting bottom edge; the bottom edge defines the control boundary without a strong four-sided box. Focus has a 3px outline with 3px offset. Muted text is not disabled text. Disabled controls use native disabled semantics, explicit styling, and nearby explanation where the reason is not obvious.
 
 ### Typography
 
