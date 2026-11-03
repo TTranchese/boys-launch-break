@@ -38,26 +38,23 @@ export async function findPlaces(seeds: Point[], radiusM = 4000, perSeed = 10): 
   const around = seeds
     .map((s) => `nwr["amenity"~"^(restaurant|bar|pub)$"]["name"](around:${radiusM},${s.lat.toFixed(5)},${s.lng.toFixed(5)});`)
     .join("\n");
-  const query = `[out:json][timeout:25];(\n${around}\n);out center tags 1500;`;
+  const query = `[out:json][timeout:40];(\n${around}\n);out center tags 1500;`;
 
-  let elements: OverpassElement[] | null = null;
-  let lastError: unknown;
-  for (const url of OVERPASS_URLS) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": USER_AGENT },
-        body: new URLSearchParams({ data: query }),
-        signal: AbortSignal.timeout(20000),
-      });
-      if (!res.ok) throw new Error(`Overpass ${res.status}`);
-      elements = ((await res.json()) as { elements: OverpassElement[] }).elements;
-      break;
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  if (!elements) throw lastError ?? new Error("Overpass unavailable");
+  // Public Overpass servers are often slow or down: ask all of them at once and
+  // take the first answer, within the route's 60 s budget.
+  const ask = async (url: string) => {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": USER_AGENT },
+      body: new URLSearchParams({ data: query }),
+      signal: AbortSignal.timeout(45000),
+    });
+    if (!res.ok) throw new Error(`Overpass ${res.status}`);
+    return ((await res.json()) as { elements: OverpassElement[] }).elements;
+  };
+  const elements = await Promise.any(OVERPASS_URLS.map(ask)).catch(() => {
+    throw new Error("Overpass unavailable");
+  });
 
   const all = new Map<string, Place>();
   for (const e of elements) {
