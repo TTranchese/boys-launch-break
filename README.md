@@ -18,7 +18,7 @@ Distances are straight-line (haversine), not driving times.
 ## Stack
 
 - Next.js (App Router) + React, deployed on Vercel
-- Google Maps JavaScript API via `@vis.gl/react-google-maps`, locked to Tuscany
+- Leaflet / react-leaflet with OpenStreetMap tiles
 - **In-memory SQL database**: [AlaSQL](https://github.com/AlaSQL/alasql) (`lib/db.ts`)
 
 ### About the in-memory database on Vercel
@@ -37,14 +37,6 @@ with Vercel Postgres / Neon / Turso — the rest of the app only uses its three 
 | PUT | `/api/groups/:groupId/participants/:participantId` | `{ name, lat, lng }` |
 | DELETE | `/api/groups/:groupId/participants/:participantId` | — |
 
-## Google Maps setup
-
-1. In Google Cloud Console enable the **Maps JavaScript API** and create an API key.
-   Restrict it (HTTP referrers) to `http://localhost:3000/*` and your Vercel domain(s).
-2. Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`.
-3. Optional: create a Map ID (Map Management) and set `NEXT_PUBLIC_GOOGLE_MAP_ID`;
-   otherwise `DEMO_MAP_ID` is used (needed for the custom markers).
-
 ## Run locally
 
 ```bash
@@ -54,6 +46,5 @@ npm run dev   # http://localhost:3000
 
 ## Deploy to Vercel
 
-Import this repo at https://vercel.com/new (framework preset: Next.js) and add
-`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (and optionally `NEXT_PUBLIC_GOOGLE_MAP_ID`) under Environment Variables,
+Import this repo at https://vercel.com/new (framework preset: Next.js, no env vars needed),
 or run `npx vercel` from the project folder.
