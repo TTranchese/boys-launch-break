@@ -42,6 +42,13 @@ a { color: var(--color-accent); }
 .push { margin-left: auto; font-variant-numeric: tabular-nums; }
 
 /* #SEARCH-AND-FIELDS */
+.location-search { align-items: stretch; }
+.location-search > .btn {
+    flex: none;
+    width: var(--search-control-size);
+    min-height: var(--search-control-size);
+    padding: 0;
+}
 .results { list-style: none; margin: 0 0 var(--space-2); padding: 0; border: var(--border-width) solid var(--color-control-border); border-radius: var(--radius-control); }
 .results li + li { border-top: var(--border-width) solid var(--color-border); }
 .results li.muted { padding: var(--space-3); }

@@ -162,6 +162,11 @@
     --field-border: var(--color-panel-border);
     --field-edge: var(--color-field-edge);
     --field-height: 48px;
+    --search-control-size: max(
+        var(--field-height),
+        calc(var(--text-body) * var(--leading-body)
+            + var(--space-3) * 2 + var(--border-width) * 2)
+    );
     --panel-bg: var(--color-surface);
     --panel-border: var(--color-panel-border);
     --panel-padding-compact: var(--space-4);

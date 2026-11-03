@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Share, LoaderCircle } from "lucide-react";
+import { Share, LoaderCircle, Search } from "lucide-react";
 import {
   IconContext, CheckIcon, CrosshairIcon, MapTrifoldIcon,
   NavigationArrowIcon, CarIcon, WarningCircleIcon, ForkKnifeIcon,
@@ -396,7 +396,7 @@ export default function DinnerApp() {
           <div className="field">
             <label htmlFor="location-search">Your town or address</label>
             <form
-              className="row gap"
+              className="row gap location-search"
               onSubmit={(e) => { e.preventDefault(); search(); }}
             >
               <input
@@ -407,8 +407,17 @@ export default function DinnerApp() {
                 placeholder="e.g. Empoli"
                 onChange={(e) => setQuery(e.target.value)}
               />
-              <button className="btn ghost" type="submit" disabled={searching || query.trim().length < 2}>
-                {searching ? "Searching…" : "Search"}
+              <button
+                className="btn ghost"
+                type="submit"
+                aria-label="Search locations"
+                title="Search locations"
+                aria-busy={searching}
+                disabled={searching || query.trim().length < 2}
+              >
+                {searching
+                  ? <LoaderCircle className="app-icon spinner" aria-hidden="true" />
+                  : <Search className="app-icon" aria-hidden="true" />}
               </button>
             </form>
           </div>
