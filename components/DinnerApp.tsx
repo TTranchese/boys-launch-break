@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Point, Strategy, Suggestion } from "@/lib/geo";
-import { inTuscany } from "@/lib/geo";
+import { inTuscany, TUSCANY_BOUNDS } from "@/lib/geo";
 import { colorFor, type GroupResponse, type Restaurant } from "@/lib/types";
 
 const DinnerMap = dynamic(() => import("./DinnerMap"), {
@@ -25,6 +25,8 @@ const storage = {
     try { localStorage.setItem(key, value); } catch { /* ignore */ }
   },
 };
+
+type SearchResult = { id: number; label: string; lat: number; lng: number };
 
 type Me = { id: string; name: string; lat?: number; lng?: number };
 
@@ -67,6 +69,11 @@ export default function DinnerApp() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [results, setResults] = useState<SearchResult[] | null>(null);
+  const [draftLabel, setDraftLabel] = useState<string | null>(null);
   const meRef = useRef<Me | null>(null);
   meRef.current = me;
 
@@ -92,7 +99,7 @@ export default function DinnerApp() {
   }, []);
 
   // --- load + poll group state ---
-  const load = useCallback(async () => {
+  const load = useCallback(async (republished = false) => {
     if (!groupId) return;
     try {
       const res = await fetch(`/api/groups/${groupId}?strategy=${strategy}`, { cache: "no-store" });
@@ -101,13 +108,17 @@ export default function DinnerApp() {
 
       // The DB is in-memory: if the server restarted and lost my row, re-publish it.
       const mine = meRef.current;
-      if (mine?.lat != null && mine.lng != null && mine.name && !json.participants.some((p) => p.id === mine.id)) {
+      if (
+        !republished &&
+        mine?.lat != null && mine.lng != null && mine.name &&
+        !json.participants.some((p) => p.id === mine.id)
+      ) {
         await fetch(`/api/groups/${groupId}/participants/${mine.id}`, {
           method: "PUT",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ name: mine.name, lat: mine.lat, lng: mine.lng }),
         });
-        return load();
+        return load(true);
       }
       setData(json);
       setError(null);
@@ -119,7 +130,7 @@ export default function DinnerApp() {
   useEffect(() => {
     if (!groupId || !me) return;
     load();
-    const t = setInterval(load, 5000);
+    const t = setInterval(() => load(), 5000);
     return () => clearInterval(t);
   }, [groupId, me?.id, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -152,20 +163,92 @@ export default function DinnerApp() {
     setError(null);
     setDraft(p);
   };
+  const onMapTap = (p: Point) => {
+    setDraftLabel(null);
+    onMapClick(p);
+  };
 
   const useMyLocation = () => {
-    if (!navigator.geolocation) { setError("Geolocation not available"); return; }
+    if (!window.isSecureContext || !navigator.geolocation) {
+      setError("Your browser can't share its location here. Search for your town below or tap the map.");
+      return;
+    }
+    setLocating(true);
     navigator.geolocation.getCurrentPosition(
-      (pos) => onMapClick({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => setError("Could not get your location"),
-      { enableHighAccuracy: false, timeout: 10000 },
+      (pos) => {
+        setLocating(false);
+        const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (!inTuscany(p)) {
+          setError("You seem to be outside Tuscany. Search for a town below or tap the map.");
+          return;
+        }
+        setDraftLabel("your current location");
+        onMapClick(p);
+      },
+      (err) => {
+        setLocating(false);
+        const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+        if (err.code === err.PERMISSION_DENIED) {
+          setError(
+            isIOS
+              ? "Location access is blocked. On iPhone: Settings → Privacy & Security → Location Services → turn it on, then allow your browser (Safari Websites / Chrome) “While Using”. Or just search for your town below."
+              : "Location access is blocked. Allow location for this site in your browser settings, or search for your town below.",
+          );
+        } else if (err.code === err.TIMEOUT) {
+          setError("Getting your location took too long. Try again, or search for your town below.");
+        } else {
+          setError("Your location isn't available right now. Search for your town below or tap the map.");
+        }
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
     );
+  };
+
+  const search = async () => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    setSearching(true);
+    setResults(null);
+    try {
+      const b = TUSCANY_BOUNDS;
+      const url =
+        "https://nominatim.openstreetmap.org/search?" +
+        new URLSearchParams({
+          format: "jsonv2",
+          q,
+          countrycodes: "it",
+          viewbox: `${b.west},${b.north},${b.east},${b.south}`,
+          bounded: "1",
+          limit: "5",
+          "accept-language": "it,en",
+        });
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const json = (await res.json()) as { place_id: number; display_name: string; lat: string; lon: string }[];
+      setResults(
+        json
+          .map((r) => ({ id: r.place_id, label: r.display_name, lat: Number(r.lat), lng: Number(r.lon) }))
+          .filter((r) => inTuscany(r)),
+      );
+    } catch {
+      setError("Search is unavailable right now. Tap the map instead.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const pickResult = (r: SearchResult) => {
+    setResults(null);
+    setQuery("");
+    setDraftLabel(r.label.split(",").slice(0, 2).join(","));
+    onMapClick({ lat: r.lat, lng: r.lng });
   };
 
   const save = async () => {
     if (!groupId || !me) return;
     const name = nameInput.trim();
-    const pos = draft ?? (me.lat != null && me.lng != null ? { lat: me.lat, lng: me.lng } : null);
+    const src = draft ?? (me.lat != null && me.lng != null ? { lat: me.lat, lng: me.lng } : null);
+    const pos = src ? { lat: src.lat, lng: src.lng } : null;
     if (!name) { setError("Enter your name first"); return; }
     if (!pos) { setError("Click on the map to set your position"); return; }
     setSaving(true);
@@ -248,18 +331,48 @@ export default function DinnerApp() {
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </label>
+          <label className="field">
+            <span>Where are you? Search a town or address — or tap the map</span>
+            <form
+              className="row gap"
+              onSubmit={(e) => { e.preventDefault(); search(); }}
+            >
+              <input
+                className="grow"
+                type="search"
+                value={query}
+                placeholder="e.g. Empoli, or Via Roma 1 Siena"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+              <button className="btn ghost" type="submit" disabled={searching || query.trim().length < 2}>
+                {searching ? "…" : "Search"}
+              </button>
+            </form>
+          </label>
+          {results && (
+            <ul className="results">
+              {results.length === 0 && <li className="muted small">No places found in Tuscany.</li>}
+              {results.map((r) => (
+                <li key={r.id}>
+                  <button onClick={() => pickResult(r)}>{r.label}</button>
+                </li>
+              ))}
+            </ul>
+          )}
           <p className="muted small">
             {draft
-              ? `Picked ${draft.lat.toFixed(4)}, ${draft.lng.toFixed(4)}`
+              ? `📌 Pin set${draftLabel ? ` at ${draftLabel}` : ""} — press “${joined ? "Update" : "Save my position"}”.`
               : joined
-                ? "Click the map to move your pin."
-                : "Click anywhere in Tuscany on the map to drop your pin."}
+                ? "Search or tap the map to move your pin."
+                : "Tip: you don’t need to share your exact address — a nearby town works fine."}
           </p>
           <div className="row gap wrap">
             <button className="btn primary" onClick={save} disabled={saving}>
               {saving ? "Saving…" : joined ? "Update" : "Save my position"}
             </button>
-            <button className="btn ghost" onClick={useMyLocation}>📍 Use my location</button>
+            <button className="btn ghost" onClick={useMyLocation} disabled={locating}>
+              {locating ? "Locating…" : "📍 Use my location"}
+            </button>
             {joined && <button className="btn ghost danger" onClick={leave}>Leave</button>}
           </div>
           {error && <p className="error">{error}</p>}
@@ -367,7 +480,7 @@ export default function DinnerApp() {
           idealPoint={data?.meeting?.idealPoint ?? null}
           selected={selected}
           restaurants={restaurants}
-          onMapClick={onMapClick}
+          onMapClick={onMapTap}
         />
       </main>
     </div>
