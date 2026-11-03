@@ -2,9 +2,12 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Point, Strategy, Suggestion } from "@/lib/geo";
+import type { Point, Strategy } from "@/lib/geo";
 import { inTuscany, TUSCANY_BOUNDS } from "@/lib/geo";
-import { colorFor, type GroupResponse, type Restaurant } from "@/lib/types";
+import {
+  colorFor, formatDuration, KIND_ICON,
+  type DinnerPlace, type DinnerResponse, type DinnerResult, type GroupResponse, type ParticipantRoute, type RoutesResponse,
+} from "@/lib/types";
 
 const DinnerMap = dynamic(() => import("./DinnerMap"), {
   ssr: false,
@@ -30,32 +33,6 @@ type SearchResult = { id: number; label: string; lat: number; lng: number };
 
 type Me = { id: string; name: string; lat?: number; lng?: number };
 
-async function fetchRestaurants(p: Point, signal: AbortSignal): Promise<Restaurant[]> {
-  const q = `[out:json][timeout:20];
-    nwr["amenity"="restaurant"]["name"](around:1500,${p.lat},${p.lng});
-    out center 40;`;
-  const res = await fetch("https://overpass-api.de/api/interpreter", {
-    method: "POST",
-    body: new URLSearchParams({ data: q }),
-    signal,
-  });
-  if (!res.ok) throw new Error(`Overpass ${res.status}`);
-  const json = (await res.json()) as {
-    elements: { type: string; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }[];
-  };
-  return json.elements
-    .map((e) => ({
-      id: `${e.type}/${e.id}`,
-      name: e.tags?.name ?? "Restaurant",
-      lat: e.lat ?? e.center?.lat ?? 0,
-      lng: e.lon ?? e.center?.lon ?? 0,
-      cuisine: e.tags?.cuisine?.replace(/;/g, ", ").replace(/_/g, " "),
-    }))
-    .filter((r) => r.lat !== 0)
-    .sort((a, b) => Math.hypot(a.lat - p.lat, a.lng - p.lng) - Math.hypot(b.lat - p.lat, b.lng - p.lng))
-    .slice(0, 12);
-}
-
 export default function DinnerApp() {
   const [groupId, setGroupId] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
@@ -64,8 +41,10 @@ export default function DinnerApp() {
   const [data, setData] = useState<GroupResponse | null>(null);
   const [strategy, setStrategy] = useState<Strategy>("total");
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
-  const [restState, setRestState] = useState<"idle" | "loading" | "error">("idle");
+  const [dinner, setDinner] = useState<DinnerResult | null>(null);
+  const [dinnerState, setDinnerState] = useState<"idle" | "loading" | "error">("idle");
+  const [dinnerError, setDinnerError] = useState<string | null>(null);
+  const [routes, setRoutes] = useState<ParticipantRoute[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -134,20 +113,46 @@ export default function DinnerApp() {
     return () => clearInterval(t);
   }, [groupId, me?.id, load]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => setSelectedIdx(0), [strategy, data?.participants.length]);
-
-  // --- restaurants around the selected town ---
-  const selected: Suggestion | null = data?.meeting?.towns[selectedIdx] ?? null;
-  const selectedKey = selected ? `${selected.name}` : "";
+  // --- best places to eat, ranked by real driving time (recomputed only when positions change) ---
+  const peopleKey = (data?.participants ?? [])
+    .map((p) => `${p.id}@${p.lat.toFixed(4)},${p.lng.toFixed(4)}`)
+    .sort()
+    .join("|");
+  const [retry, setRetry] = useState(0);
   useEffect(() => {
-    if (!selected) { setRestaurants([]); return; }
+    if (!groupId || !peopleKey) { setDinner(null); setDinnerState("idle"); return; }
     const ctrl = new AbortController();
-    setRestState("loading");
-    fetchRestaurants(selected, ctrl.signal)
-      .then((r) => { setRestaurants(r); setRestState("idle"); })
-      .catch((e) => { if (e.name !== "AbortError") { setRestaurants([]); setRestState("error"); } });
+    setDinnerState("loading");
+    fetch(`/api/groups/${groupId}/dinner?strategy=${strategy}`, { signal: ctrl.signal, cache: "no-store" })
+      .then(async (res) => {
+        const json = (await res.json()) as DinnerResponse;
+        if ("error" in json) throw new Error(json.error);
+        setDinner(json);
+        setSelectedIdx(0);
+        setDinnerState("idle");
+      })
+      .catch((e) => {
+        if (e.name === "AbortError") return;
+        setDinnerError(e instanceof Error ? e.message : "Something went wrong");
+        setDinnerState("error");
+      });
     return () => ctrl.abort();
-  }, [selectedKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [groupId, strategy, peopleKey, retry]);
+
+  const selected: DinnerPlace | null = dinner?.places[selectedIdx] ?? null;
+
+  // --- road routes from everyone to the selected place ---
+  const routeKey = selected ? `${selected.id}|${peopleKey}` : "";
+  useEffect(() => {
+    if (!groupId || !selected) { setRoutes([]); return; }
+    const ctrl = new AbortController();
+    setRoutes([]);
+    fetch(`/api/groups/${groupId}/routes?lat=${selected.lat}&lng=${selected.lng}`, { signal: ctrl.signal })
+      .then((r) => r.json() as Promise<RoutesResponse>)
+      .then((j) => setRoutes(j.routes ?? []))
+      .catch(() => { /* lines are a nice-to-have */ });
+    return () => ctrl.abort();
+  }, [routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- color per participant (stable by join order) ---
   const colorMap = useMemo(() => {
@@ -389,11 +394,14 @@ export default function DinnerApp() {
                   <span className="swatch" style={{ background: colorOf(p.id) }} />
                   {p.name}
                   {p.id === me?.id && <span className="muted small"> (you)</span>}
-                  {selected && (
-                    <span className="muted small push">
-                      {selected.distances.find((d) => d.participantId === p.id)?.km.toFixed(1)} km
-                    </span>
-                  )}
+                  {selected && (() => {
+                    const leg = selected.legs.find((l) => l.participantId === p.id);
+                    return leg ? (
+                      <span className="muted small push">
+                        🚗 {formatDuration(leg.durationS)} · {(leg.distanceM / 1000).toFixed(0)} km
+                      </span>
+                    ) : null;
+                  })()}
                 </li>
               ))}
             </ul>
@@ -404,69 +412,94 @@ export default function DinnerApp() {
           <h2>3 · Where to eat</h2>
           <div className="segmented" role="tablist">
             <button className={strategy === "total" ? "on" : ""} onClick={() => setStrategy("total")}>
-              Least total travel
+              Least total driving
             </button>
             <button className={strategy === "fair" ? "on" : ""} onClick={() => setStrategy("fair")}>
-              Fairest for everyone
+              Fairest drive
             </button>
           </div>
           <p className="muted small">
             {strategy === "total"
-              ? "Minimizes the sum of everyone’s distances (geometric median)."
-              : "Minimizes the longest trip anyone has to make (minimax)."}{" "}
-            Distances are straight-line.
+              ? "Restaurants and bars where everyone’s driving times add up to the least."
+              : "Restaurants and bars where the longest drive is as short as possible."}{" "}
+            Times are by car on real roads.
           </p>
+          {dinner?.routing === "estimate" && (
+            <p className="muted small">⚠️ The route service is busy, so these times are estimates.</p>
+          )}
 
-          {!data?.meeting ? (
+          {participants.length === 0 ? (
             <p className="muted small">Add at least one position to get suggestions.</p>
+          ) : dinnerState === "loading" && !dinner ? (
+            <p className="muted small">🚗 Finding restaurants and calculating drive times…</p>
+          ) : dinnerState === "error" ? (
+            <p className="error">
+              {dinnerError}{" "}
+              <button className="btn ghost" onClick={() => setRetry((n) => n + 1)}>Retry</button>
+            </p>
+          ) : dinner && dinner.places.length === 0 ? (
+            <p className="muted small">No restaurants or bars found in the area on OpenStreetMap.</p>
           ) : (
-            <ol className="towns">
-              {data.meeting.towns.map((t, i) => (
-                <li key={t.name}>
-                  <button className={i === selectedIdx ? "town on" : "town"} onClick={() => setSelectedIdx(i)}>
-                    <span className="town-name">{i === 0 ? "🏆 " : ""}{t.name}</span>
-                    <span className="muted small">
-                      total {t.totalKm.toFixed(0)} km · longest {t.maxKm.toFixed(0)} km ({nameOf(
-                        t.distances.reduce((a, b) => (b.km > a.km ? b : a)).participantId,
-                      )})
-                    </span>
-                  </button>
-                </li>
-              ))}
+            <ol className={`towns${dinnerState === "loading" ? " stale" : ""}`}>
+              {dinner?.places.map((pl, i) => {
+                const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
+                return (
+                  <li key={pl.id}>
+                    <button className={i === selectedIdx ? "town on" : "town"} onClick={() => setSelectedIdx(i)}>
+                      <span className="town-name">
+                        {i === 0 ? "🏆 " : `${KIND_ICON[pl.kind] ?? "🍽️"} `}
+                        {pl.name}
+                      </span>
+                      <span className="muted small">
+                        {[pl.kind === "restaurant" ? pl.cuisine : pl.kind, pl.town].filter(Boolean).join(" · ")}
+                      </span>
+                      <span className="small">
+                        {participants.length > 1 ? (
+                          <>total {formatDuration(pl.totalS)} · longest {formatDuration(pl.maxS)} ({nameOf(longest.participantId)})</>
+                        ) : (
+                          <>{formatDuration(pl.totalS)} drive</>
+                        )}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ol>
           )}
         </section>
 
         {selected && (
           <section className="card">
-            <h2>Restaurants in {selected.name}</h2>
-            {restState === "loading" && <p className="muted small">Searching OpenStreetMap…</p>}
-            {restState === "error" && <p className="muted small">Couldn’t reach OpenStreetMap right now.</p>}
-            {restState === "idle" && restaurants.length === 0 && (
-              <p className="muted small">No restaurants found on OpenStreetMap nearby.</p>
-            )}
-            <ul className="restaurants">
-              {restaurants.map((r) => (
-                <li key={r.id}>
-                  <a
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${r.name} ${selected.name}`)}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {r.name}
-                  </a>
-                  {r.cuisine && <span className="muted small"> · {r.cuisine}</span>}
-                </li>
-              ))}
-            </ul>
-            <a
-              className="btn ghost block"
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`ristorante ${selected.name}`)}`}
-              target="_blank"
-              rel="noreferrer"
-            >
-              More restaurants in {selected.name} on Google Maps ↗
-            </a>
+            <h2>{KIND_ICON[selected.kind] ?? "🍽️"} {selected.name}</h2>
+            <p className="muted small">
+              {[selected.cuisine, selected.town].filter(Boolean).join(" · ") || "Details on OpenStreetMap"}
+            </p>
+            <div className="row gap wrap">
+              <a
+                className="btn primary"
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}&travelmode=driving`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                🚗 Directions
+              </a>
+              <a
+                className="btn ghost"
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name} ${selected.town ?? ""}`.trim())}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Reviews & hours ↗
+              </a>
+              <a
+                className="btn ghost"
+                href={`https://www.openstreetmap.org/${selected.id}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                OSM ↗
+              </a>
+            </div>
           </section>
         )}
       </aside>
@@ -477,9 +510,14 @@ export default function DinnerApp() {
           colorOf={colorOf}
           myId={me?.id ?? ""}
           draft={draft}
-          idealPoint={data?.meeting?.idealPoint ?? null}
+          idealPoint={data?.idealPoint ?? null}
+          places={dinner?.places ?? []}
           selected={selected}
-          restaurants={restaurants}
+          routes={routes}
+          onSelectPlace={(id) => {
+            const i = dinner?.places.findIndex((p) => p.id === id) ?? -1;
+            if (i >= 0) setSelectedIdx(i);
+          }}
           onMapClick={onMapTap}
         />
       </main>

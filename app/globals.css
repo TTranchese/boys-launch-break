@@ -111,7 +111,12 @@ input {
 }
 .pin-star { width: 34px; height: 34px; background: var(--gold); font-size: 18px; }
 .pin-ideal { width: 24px; height: 24px; background: #333; font-size: 14px; opacity: .75; }
-.pin-food { width: 24px; height: 24px; background: #fff; font-size: 13px; }
+.pin-food { position: relative; width: 26px; height: 26px; background: #fff; font-size: 13px; }
+.pin-food .rank {
+  position: absolute; top: -7px; right: -7px; min-width: 16px; height: 16px; padding: 0 3px;
+  border-radius: 8px; background: var(--accent); color: #fff; font-size: 10px; line-height: 16px; text-align: center;
+}
+.towns.stale { opacity: 0.55; }
 
 @media (max-width: 760px) {
   .layout { grid-template-columns: 1fr; grid-template-rows: 55dvh auto; height: auto; }
