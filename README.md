@@ -55,5 +55,5 @@ npm run dev   # http://localhost:3000
 ## Deploy to Vercel
 
 Import this repo at https://vercel.com/new (framework preset: Next.js) and add
-`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (and optionally `NEXT_PUBLIC_GOOGLE_MAP_ID`) under Environment Variables,,
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (and optionally `NEXT_PUBLIC_GOOGLE_MAP_ID`) under Environment Variables,
 or run `npx vercel` from the project folder.
