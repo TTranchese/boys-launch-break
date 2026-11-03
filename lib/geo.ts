@@ -78,42 +78,26 @@ export function minimaxCenter(points: Point[]): Point {
   return toLatLng(cx, cy);
 }
 
-export type Suggestion = {
-  name: string;
-  lat: number;
-  lng: number;
-  totalKm: number;
-  maxKm: number;
-  distances: { participantId: string; km: number }[];
-};
-
-export type MeetingResult = {
-  strategy: Strategy;
-  idealPoint: Point; // the mathematical optimum (may be in a field!)
-  towns: Suggestion[]; // real places, best first
-};
-
-export function findMeetingPlace(
-  people: (Point & { id: string })[],
-  strategy: Strategy,
-  limit = 5,
-): MeetingResult | null {
+/** Straight-line optimum for a strategy (just a reference point on the map). */
+export function idealPointFor(people: Point[], strategy: Strategy): Point | null {
   if (people.length === 0) return null;
-  const idealPoint = strategy === "fair" ? minimaxCenter(people) : geometricMedian(people);
+  return strategy === "fair" ? minimaxCenter(people) : geometricMedian(people);
+}
 
-  const scored: Suggestion[] = TOWNS.map((t) => {
-    const distances = people.map((p) => ({ participantId: p.id, km: haversineKm(p, t) }));
-    const totalKm = distances.reduce((s, d) => s + d.km, 0);
-    const maxKm = Math.max(...distances.map((d) => d.km));
-    return { ...t, totalKm, maxKm, distances };
-  });
-
-  // Primary metric depends on strategy; the other one breaks ties.
-  scored.sort((a, b) =>
-    strategy === "fair"
-      ? a.maxKm - b.maxKm || a.totalKm - b.totalKm
-      : a.totalKm - b.totalKm || a.maxKm - b.maxKm,
-  );
-
-  return { strategy, idealPoint, towns: scored.slice(0, limit) };
+/**
+ * Areas worth searching for restaurants: both straight-line optima plus the
+ * towns that score best by straight-line distance. Driving times are then
+ * computed for real places around all of them, so a seed that looks good on
+ * paper but is badly connected by road simply loses.
+ */
+export function searchSeeds(people: Point[], strategy: Strategy, townCount = 4): Point[] {
+  if (people.length === 0) return [];
+  const seeds: Point[] = [geometricMedian(people), minimaxCenter(people)];
+  const scored = TOWNS.map((t) => {
+    const d = people.map((p) => haversineKm(p, t));
+    return { t, total: d.reduce((a, b) => a + b, 0), max: Math.max(...d) };
+  }).sort((a, b) => (strategy === "fair" ? a.max - b.max : a.total - b.total));
+  for (const { t } of scored.slice(0, townCount)) seeds.push({ lat: t.lat, lng: t.lng });
+  // Drop seeds that are almost on top of each other.
+  return seeds.filter((s, i) => seeds.slice(0, i).every((o) => haversineKm(o, s) > 2));
 }

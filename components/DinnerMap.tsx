@@ -3,41 +3,35 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap, Circle } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
 import type { Participant } from "@/lib/db";
-import type { Point, Suggestion } from "@/lib/geo";
+import type { Point } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
-import type { Restaurant } from "@/lib/types";
+import { formatDuration, KIND_ICON, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
+
+const escapeHtml = (s: string) =>
+  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+const icon = (html: string, size: number) =>
+  L.divIcon({ className: "", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
 
 const dot = (color: string, label: string, size = 28) =>
-  L.divIcon({
-    className: "",
-    html: `<div class="pin" style="background:${color};width:${size}px;height:${size}px">${label}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
+  icon(
+    `<div class="pin" style="background:${color};width:${size}px;height:${size}px">${escapeHtml(label)}</div>`,
+    size,
+  );
 
-const starIcon = L.divIcon({
-  className: "",
-  html: `<div class="pin pin-star">★</div>`,
-  iconSize: [34, 34],
-  iconAnchor: [17, 17],
-});
+const starIcon = icon(`<div class="pin pin-star">★</div>`, 34);
+const idealIcon = icon(`<div class="pin pin-ideal">◎</div>`, 22);
+const placeIcon = (kind: string, rank: number) =>
+  icon(`<div class="pin pin-food">${KIND_ICON[kind] ?? "🍽️"}<span class="rank">${rank}</span></div>`, 26);
 
-const idealIcon = L.divIcon({
-  className: "",
-  html: `<div class="pin pin-ideal">◎</div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
+function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
+  useMapEvents({ click: (e) => onClick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
+  return null;
+}
 
-const forkIcon = L.divIcon({
-  className: "",
-  html: `<div class="pin pin-food">🍝</div>`,
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
-});
-
+/** Pan to a newly picked pin when it's off screen. */
 function FlyTo({ point }: { point: Point | null }) {
   const map = useMap();
   useEffect(() => {
@@ -48,8 +42,14 @@ function FlyTo({ point }: { point: Point | null }) {
   return null;
 }
 
-function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
-  useMapEvents({ click: (e) => onClick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
+/** When a place is selected, make sure it and everyone are on screen. */
+function FitSelection({ points, selectedId }: { points: Point[]; selectedId: string | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!selectedId || points.length === 0) return;
+    const b = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
+    if (!map.getBounds().contains(b)) map.flyToBounds(b.pad(0.15), { duration: 0.8, maxZoom: 13 });
+  }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -59,16 +59,19 @@ export type DinnerMapProps = {
   myId: string;
   draft: Point | null;
   idealPoint: Point | null;
-  selected: Suggestion | null;
-  restaurants: Restaurant[];
+  places: DinnerPlace[];
+  selected: DinnerPlace | null;
+  routes: ParticipantRoute[];
   onMapClick: (p: Point) => void;
+  onSelectPlace: (id: string) => void;
 };
 
 export default function DinnerMap({
-  participants, colorOf, myId, draft, idealPoint, selected, restaurants, onMapClick,
+  participants, colorOf, myId, draft, idealPoint, places, selected, routes, onMapClick, onSelectPlace,
 }: DinnerMapProps) {
   const b = TUSCANY_BOUNDS;
   const bounds = L.latLngBounds([b.south, b.west], [b.north, b.east]);
+  const routeOf = (id: string) => routes.find((r) => r.participantId === id);
 
   return (
     <MapContainer
@@ -79,69 +82,83 @@ export default function DinnerMap({
       style={{ height: "100%", width: "100%" }}
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ClickHandler onClick={onMapClick} />
       <FlyTo point={draft} />
+      <FitSelection points={selected ? [...participants, selected] : []} selectedId={selected?.id ?? null} />
 
+      {/* Road routes (dashed straight line while loading or if routing failed) */}
       {selected &&
-        participants.map((p) => (
-          <Polyline
-            key={`line-${p.id}`}
-            positions={[[p.lat, p.lng], [selected.lat, selected.lng]]}
-            pathOptions={{ color: colorOf(p.id), weight: 2, dashArray: "6 6", opacity: 0.8 }}
-          />
-        ))}
+        participants.map((p) => {
+          const r = routeOf(p.id);
+          return r && !("error" in r) ? (
+            <Polyline
+              key={`route-${p.id}`}
+              positions={r.path}
+              pathOptions={{ color: colorOf(p.id), weight: 4, opacity: 0.8 }}
+            />
+          ) : (
+            <Polyline
+              key={`line-${p.id}`}
+              positions={[[p.lat, p.lng], [selected.lat, selected.lng]]}
+              pathOptions={{ color: colorOf(p.id), weight: 2, dashArray: "6 6", opacity: 0.6 }}
+            />
+          );
+        })}
 
       {participants
         .filter((p) => !(p.id === myId && draft))
-        .map((p) => (
-          <Marker key={p.id} position={[p.lat, p.lng]} icon={dot(colorOf(p.id), p.name.charAt(0).toUpperCase())}>
-            <Popup>
-              <strong>{p.name}</strong>
-              {p.id === myId && " (you)"}
-            </Popup>
-          </Marker>
-        ))}
+        .map((p) => {
+          const leg = selected?.legs.find((l) => l.participantId === p.id);
+          return (
+            <Marker key={p.id} position={[p.lat, p.lng]} icon={dot(colorOf(p.id), p.name.charAt(0).toUpperCase())} zIndexOffset={500}>
+              <Popup>
+                <strong>{p.name}</strong>
+                {p.id === myId && " (you)"}
+                {leg && selected && (
+                  <>
+                    <br />🚗 {formatDuration(leg.durationS)} to {selected.name}
+                  </>
+                )}
+              </Popup>
+            </Marker>
+          );
+        })}
 
       {draft && (
-        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", 30)}>
+        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", 30)} zIndexOffset={600}>
           <Popup>Your new position — press “Save” to share it</Popup>
         </Marker>
       )}
 
       {idealPoint && (
         <Marker position={[idealPoint.lat, idealPoint.lng]} icon={idealIcon}>
-          <Popup>Mathematical optimum</Popup>
+          <Popup>Straight-line optimum (as the crow flies)</Popup>
         </Marker>
+      )}
+
+      {places.map((pl, i) =>
+        pl.id === selected?.id ? null : (
+          <Marker
+            key={pl.id}
+            position={[pl.lat, pl.lng]}
+            icon={placeIcon(pl.kind, i + 1)}
+            eventHandlers={{ click: () => onSelectPlace(pl.id) }}
+          />
+        ),
       )}
 
       {selected && (
-        <>
-          <Circle
-            center={[selected.lat, selected.lng]}
-            radius={1500}
-            pathOptions={{ color: "#c0392b", fillOpacity: 0.06, weight: 1 }}
-          />
-          <Marker position={[selected.lat, selected.lng]} icon={starIcon} zIndexOffset={1000}>
-            <Popup>
-              <strong>{selected.name}</strong>
-              <br />
-              Total {selected.totalKm.toFixed(1)} km · longest {selected.maxKm.toFixed(1)} km
-            </Popup>
-          </Marker>
-        </>
-      )}
-
-      {restaurants.map((r) => (
-        <Marker key={r.id} position={[r.lat, r.lng]} icon={forkIcon}>
+        <Marker position={[selected.lat, selected.lng]} icon={starIcon} zIndexOffset={1000}>
           <Popup>
-            <strong>{r.name}</strong>
-            {r.cuisine && <><br />{r.cuisine}</>}
+            <strong>{selected.name}</strong>
+            <br />
+            Total {formatDuration(selected.totalS)} · longest {formatDuration(selected.maxS)}
           </Popup>
         </Marker>
-      ))}
+      )}
     </MapContainer>
   );
 }
