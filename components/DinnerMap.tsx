@@ -1,30 +1,41 @@
 "use client";
 
-import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { useEffect } from "react";
+import { Fragment, useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
 import type { Participant } from "@/lib/db";
 import type { Point } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
-import { formatDuration, KIND_ICON, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
+import { formatDuration, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-const icon = (html: string, size: number) =>
-  L.divIcon({ className: "", html, iconSize: [size, size], iconAnchor: [size / 2, size / 2] });
+// Leaflet anchors at the coordinate; CSS owns the marker's size and centering.
+const icon = (html: string) =>
+  L.divIcon({ className: "map-marker", html, iconSize: [0, 0], iconAnchor: [0, 0] });
 
-const dot = (color: string, label: string, size = 28) =>
+const dot = (color: string, label: string, draft = false) =>
   icon(
-    `<div class="pin" style="background:${color};width:${size}px;height:${size}px">${escapeHtml(label)}</div>`,
-    size,
+    `<div class="pin${draft ? " pin-draft" : ""}" style="--person-color:${color}">${escapeHtml(label)}</div>`,
   );
 
-const starIcon = icon(`<div class="pin pin-star">★</div>`, 34);
-const idealIcon = icon(`<div class="pin pin-ideal">◎</div>`, 22);
-const placeIcon = (kind: string, rank: number) =>
-  icon(`<div class="pin pin-food">${KIND_ICON[kind] ?? "🍽️"}<span class="rank">${rank}</span></div>`, 26);
+const idealIcon = icon(`<div class="pin pin-ideal">◎</div>`);
+const placeIcon = (rank: number, selected = false) =>
+  icon(`<div class="pin ${selected ? "pin-selected" : "pin-food"}">${rank}</div>`);
+
+function tokenNumber(name: string) {
+  const value = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  if (!Number.isFinite(value)) throw new Error(`Missing design token: ${name}`);
+  return value;
+}
+
+function mapMotion() {
+  return {
+    animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    duration: tokenNumber("--duration-map") / 1000,
+  };
+}
 
 function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
   useMapEvents({ click: (e) => onClick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
@@ -36,7 +47,7 @@ function FlyTo({ point }: { point: Point | null }) {
   const map = useMap();
   useEffect(() => {
     if (point && !map.getBounds().pad(-0.1).contains([point.lat, point.lng])) {
-      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 11), { duration: 0.8 });
+      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 11), mapMotion());
     }
   }, [point, map]);
   return null;
@@ -48,7 +59,7 @@ function FitSelection({ points, selectedId }: { points: Point[]; selectedId: str
   useEffect(() => {
     if (!selectedId || points.length === 0) return;
     const b = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-    if (!map.getBounds().contains(b)) map.flyToBounds(b.pad(0.15), { duration: 0.8, maxZoom: 13 });
+    if (!map.getBounds().contains(b)) map.flyToBounds(b.pad(0.15), { ...mapMotion(), maxZoom: 13 });
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -79,7 +90,7 @@ export default function DinnerMap({
       minZoom={7}
       maxBounds={bounds.pad(0.05)}
       maxBoundsViscosity={1.0}
-      style={{ height: "100%", width: "100%" }}
+      className="dinner-map"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>'
@@ -93,19 +104,15 @@ export default function DinnerMap({
       {selected &&
         participants.map((p) => {
           const r = routeOf(p.id);
-          return r && !("error" in r) ? (
-            <Polyline
-              key={`route-${p.id}`}
-              positions={r.path}
-              pathOptions={{ color: colorOf(p.id), weight: 4, opacity: 0.8 }}
-            />
-          ) : (
-            <Polyline
-              key={`line-${p.id}`}
-              positions={[[p.lat, p.lng], [selected.lat, selected.lng]]}
-              pathOptions={{ color: colorOf(p.id), weight: 2, dashArray: "6 6", opacity: 0.6 }}
-            />
-          );
+          const approximate = !r || "error" in r;
+          const positions: [number, number][] = approximate
+            ? [[p.lat, p.lng], [selected.lat, selected.lng]]
+            : r.path;
+          const routeClass = approximate ? "map-route map-route-approximate" : "map-route";
+          return <Fragment key={`route-${p.id}`}>
+            <Polyline positions={positions} pathOptions={{ className: "map-route-casing", interactive: false }} />
+            <Polyline positions={positions} pathOptions={{ color: colorOf(p.id), className: routeClass }} />
+          </Fragment>;
         })}
 
       {participants
@@ -113,7 +120,7 @@ export default function DinnerMap({
         .map((p) => {
           const leg = selected?.legs.find((l) => l.participantId === p.id);
           return (
-            <Marker key={p.id} position={[p.lat, p.lng]} icon={dot(colorOf(p.id), p.name.charAt(0).toUpperCase())} zIndexOffset={500}>
+            <Marker key={p.id} position={[p.lat, p.lng]} icon={dot(colorOf(p.id), p.name.charAt(0).toUpperCase())} zIndexOffset={tokenNumber("--map-layer-person")} title={p.name}>
               <Popup>
                 <strong>{p.name}</strong>
                 {p.id === myId && " (you)"}
@@ -128,7 +135,7 @@ export default function DinnerMap({
         })}
 
       {draft && (
-        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", 30)} zIndexOffset={600}>
+        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", true)} zIndexOffset={tokenNumber("--map-layer-draft")} title="Unsaved position">
           <Popup>Your new position — press “Save” to share it</Popup>
         </Marker>
       )}
@@ -144,14 +151,15 @@ export default function DinnerMap({
           <Marker
             key={pl.id}
             position={[pl.lat, pl.lng]}
-            icon={placeIcon(pl.kind, i + 1)}
+            icon={placeIcon(i + 1)}
+            title={`${i + 1}. ${pl.name}`}
             eventHandlers={{ click: () => onSelectPlace(pl.id) }}
           />
         ),
       )}
 
       {selected && (
-        <Marker position={[selected.lat, selected.lng]} icon={starIcon} zIndexOffset={1000}>
+        <Marker position={[selected.lat, selected.lng]} icon={placeIcon(places.findIndex((pl) => pl.id === selected.id) + 1, true)} zIndexOffset={tokenNumber("--map-layer-selected")} title={`Selected: ${selected.name}`}>
           <Popup>
             <strong>{selected.name}</strong>
             <br />

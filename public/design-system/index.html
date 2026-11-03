@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cena in Toscana · Design system</title>
+    <link rel="stylesheet" href="/design-system/tokens.css">
+    <link rel="stylesheet" href="/design-system/preview.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="shell">
+    <header class="topbar">
+        <div class="brand">
+            <span class="brand__mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-12A7 7 0 0 0 5 9c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2"/></svg></span>
+            Cena in Toscana <span class="badge">System / 0.1</span>
+        </div>
+        <button class="button button--secondary" id="theme" type="button" aria-pressed="false">Dark theme</button>
+    </header>
+    <main id="main" tabindex="-1">
+        <div class="intro">
+            <p class="eyebrow muted">Design foundation · Clean &amp; neutral</p>
+            <h1 class="intro__title">Less to navigate.<br>More reason to meet.</h1>
+            <p class="intro__copy">A quiet interface for a shared decision. Clear places, comparable journeys, and one obvious next step.</p>
+            <p class="small muted">Proposed visual system. All people, venues, and journey times below are illustrative.</p>
+        </div>
+
+        <section class="section" aria-labelledby="foundation-title">
+            <div class="section__heading"><h2 class="section__title" id="foundation-title">01 / Foundations</h2><p class="section__note">Neutral by default. Color with a purpose.</p></div>
+            <div class="panel stack">
+                <div class="palette">
+                    <div class="swatch"><div class="swatch__color swatch__color--canvas"></div><p class="small">Canvas</p><p class="caption muted">Background</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--surface"></div><p class="small">Surface</p><p class="caption muted">Panels</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--text"></div><p class="small">Graphite</p><p class="caption muted">Content</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--muted"></div><p class="small">Slate</p><p class="caption muted">Supporting</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--action"></div><p class="small">Action</p><p class="caption muted">Primary CTA</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--accent"></div><p class="small">Blue</p><p class="caption muted">Focus &amp; selection</p></div>
+                </div>
+                <div class="divider"></div>
+                <div class="grid">
+                    <div class="stack"><h3 class="type__title">Find a place that works<br>for everyone.</h3><p>System sans. Clear hierarchy. Familiar controls.</p><p class="small muted">28 / 36 title · 16 / 24 body · 14 / 20 supporting</p></div>
+                    <div class="stack"><h3 class="section__title">Room to think.</h3><div class="space-demo" aria-label="Spacing examples in pixels"><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--8"></div><span class="small muted">8</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--16"></div><span class="small muted">16</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--24"></div><span class="small muted">24</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--32"></div><span class="small muted">32</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--48"></div><span class="small muted">48</span></div></div><p class="small muted">4px base · 10px controls · 14px panels · no card shadow</p></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="controls-title">
+            <div class="section__heading"><h2 class="section__title" id="controls-title">02 / Controls &amp; feedback</h2><p class="section__note">Try Tab to inspect keyboard focus.</p></div>
+            <div class="grid">
+                <div class="panel stack">
+                    <h3 class="section__title">A clear action hierarchy</h3>
+                    <div class="row"><button class="button" id="invite" type="button">Invite friends <span aria-hidden="true">↗</span></button><button class="button button--secondary" id="secondary" type="button">Update position</button><button class="button button--quiet" id="tertiary" type="button">Cancel</button></div>
+                    <div class="row"><button class="button" type="button" disabled>Save position</button><span class="small muted">Choose a location to enable saving.</span></div>
+                    <div class="row"><span class="badge badge--success">✓ Saved</span><span class="badge badge--warning">Estimated times</span><span class="badge">Unsaved position</span></div>
+                    <p class="small muted" id="action-status" role="status">Demo actions stay inside this preview.</p>
+                    <div class="message">Drive times are estimates. Road routing is temporarily unavailable.</div>
+                    <div class="message message--error">Your position wasn’t saved. Check your connection and try again.</div>
+                </div>
+                <form class="panel stack" id="position-form" novalidate>
+                    <h3 class="section__title">Your position</h3>
+                    <label class="field"><span class="field__label">Your name</span><input class="field__input" id="name" name="name" autocomplete="given-name" value="Giulia" maxlength="40" required aria-describedby="name-error"><span class="field__error" id="name-error" hidden>Enter your name to save your position.</span></label>
+                    <label class="field"><span class="field__label">Town or address</span><input class="field__input" id="town" name="town" value="Empoli" required aria-describedby="location-help town-error"><span class="small muted" id="location-help">A nearby town is enough. You don’t need to share your address.</span><span class="field__error" id="town-error" hidden>Enter a town or address.</span></label>
+                    <div class="row"><button class="button" id="save" type="submit">Save my position</button><span class="small muted" id="save-status" role="status">Example form · no location is shared.</span></div>
+                </form>
+            </div>
+        </section>
+
+        <section class="section" aria-labelledby="decision-title">
+            <div class="section__heading"><h2 class="section__title" id="decision-title">03 / The shared decision</h2><p class="section__note">Select a strategy or a place.</p></div>
+            <div class="grid">
+                <div class="panel stack">
+                    <fieldset class="choices" aria-describedby="strategy-help"><legend class="choices__legend">How should we compare places?</legend><label class="choice"><input class="radio" type="radio" name="strategy" value="total" checked>Least total driving</label><label class="choice"><input class="radio" type="radio" name="strategy" value="fair">Fairest drive</label></fieldset>
+                    <p class="small muted" id="strategy-help">Minimize everyone’s combined driving time.</p>
+                    <fieldset class="stack place-group" id="places"><legend class="choices__legend">Places to meet</legend></fieldset>
+                    <p class="small muted" id="selection-status" role="status">Osteria della Piazza selected.</p>
+                </div>
+                <div class="panel stack">
+                    <div class="row"><h3 class="section__title" id="selected-name">Osteria della Piazza</h3><span class="badge">Selected</span></div>
+                    <p class="small muted" id="selected-meta">Restaurant · San Miniato · Fictional example</p>
+                    <div class="person"><span class="avatar" aria-hidden="true">G</span><div><p>Giulia <span class="small muted">(you)</span></p><p class="small muted">Empoli</p></div><span class="person__time numbers" id="time-g">18 min</span></div>
+                    <div class="person"><span class="avatar avatar--second" aria-hidden="true">M</span><div><p>Marco</p><p class="small muted">Pontedera</p></div><span class="person__time numbers" id="time-m">26 min</span></div>
+                    <svg class="map-demo" viewBox="0 0 460 220" role="img" aria-labelledby="map-title map-desc"><title id="map-title">Map identity example</title><desc id="map-desc">Schematic, not a real map. Giulia has a blue route and Marco a purple dashed approximate connection to the selected numbered venue. Drive times are available as text above.</desc><path class="map-demo__road" d="M-20 180 480 30M70-20 290 250M-20 75 480 160"/><path class="map-demo__route" d="M85 155 180 120 230 100"/><path class="map-demo__route map-demo__route--second" d="M365 65 230 100"/><circle class="map-demo__pin" cx="85" cy="155" r="18"/><text class="map-demo__text" x="85" y="160" text-anchor="middle">G</text><circle class="map-demo__pin map-demo__pin--second" cx="365" cy="65" r="18"/><text class="map-demo__text" x="365" y="70" text-anchor="middle">M</text><circle class="map-demo__venue" cx="230" cy="100" r="22"/><text class="map-demo__number" id="map-rank" x="230" y="106" text-anchor="middle">1</text><text class="map-demo__text" x="16" y="205">Identity schematic · not geographic</text></svg>
+                    <p class="small muted">Initials identify people. Numbers identify venues. Dashed connections indicate an unavailable road route.</p>
+                    <button class="button" id="directions" type="button">Get directions <span aria-hidden="true">↗</span></button>
+                    <p class="small muted" id="directions-status" role="status">Preview only. No external destination is opened.</p>
+                </div>
+            </div>
+        </section>
+        <footer class="footer stack"><p class="small">Consistent foundations. Useful distinctions. Familiar interactions.</p><p class="small muted">Specification: design-system/cena-in-toscana/MASTER.md · Preview isolated from the live app.</p></footer>
+    </main>
+</div>
+<script>
+    const root = document.documentElement;
+    const themeButton = document.getElementById('theme');
+    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
+    themeButton.setAttribute('aria-pressed', String(systemDark.matches));
+    themeButton.addEventListener('click', () => {
+        const dark = !(root.dataset.theme ? root.dataset.theme === 'dark' : systemDark.matches);
+        root.dataset.theme = dark ? 'dark' : 'light';
+        themeButton.setAttribute('aria-pressed', String(dark));
+    });
+    const venues = [
+        { id: 'osteria', name: 'Osteria della Piazza', town: 'San Miniato', g: 18, m: 26 },
+        { id: 'trattoria', name: 'Trattoria del Ponte', town: 'Fucecchio', g: 23, m: 23 },
+    ];
+    let selected = 'osteria';
+    function renderPlaces() {
+        const fair = document.querySelector('[name="strategy"]:checked').value === 'fair';
+        const ordered = [...venues].sort((a, b) => fair ? Math.max(a.g, a.m) - Math.max(b.g, b.m) : a.g + a.m - b.g - b.m);
+        const group = document.getElementById('places');
+        group.replaceChildren();
+        const legend = document.createElement('legend');
+        legend.className = 'choices__legend';
+        legend.textContent = 'Places to meet';
+        group.append(legend);
+        ordered.forEach((venue, index) => {
+            const label = document.createElement('label');
+            label.className = 'place';
+            const radio = document.createElement('input');
+            radio.className = 'radio';
+            radio.type = 'radio';
+            radio.name = 'place';
+            radio.value = venue.id;
+            radio.checked = selected === venue.id;
+            radio.addEventListener('change', () => { selected = venue.id; updateDetail(); });
+            const content = document.createElement('span');
+            const name = document.createElement('span');
+            name.className = 'place__name';
+            name.textContent = venue.name;
+            const meta = document.createElement('span');
+            meta.className = 'place__details';
+            meta.textContent = `Restaurant · ${venue.town}`;
+            const times = document.createElement('span');
+            times.className = 'place__details numbers';
+            times.textContent = `Total ${venue.g + venue.m} min · Longest ${Math.max(venue.g, venue.m)} min`;
+            content.append(name, meta, times);
+            const rank = document.createElement('span');
+            rank.className = 'place__rank';
+            rank.textContent = `#${index + 1}`;
+            label.append(radio, content, rank);
+            group.append(label);
+        });
+        document.getElementById('strategy-help').textContent = fair ? 'Minimize the longest individual drive.' : 'Minimize everyone’s combined driving time.';
+        updateDetail();
+    }
+    function updateDetail() {
+        const venue = venues.find(item => item.id === selected);
+        document.getElementById('selected-name').textContent = venue.name;
+        document.getElementById('selected-meta').textContent = `Restaurant · ${venue.town} · Fictional example`;
+        document.getElementById('time-g').textContent = `${venue.g} min`;
+        document.getElementById('time-m').textContent = `${venue.m} min`;
+        document.getElementById('map-rank').textContent = [...document.querySelectorAll('[name="place"]')].findIndex(input => input.value === selected) + 1;
+        document.getElementById('selection-status').textContent = `${venue.name} selected.`;
+    }
+    document.querySelectorAll('[name="strategy"]').forEach(input => input.addEventListener('change', renderPlaces));
+    renderPlaces();
+    document.getElementById('invite').addEventListener('click', () => { document.getElementById('action-status').textContent = 'Invite action preview: the live app will share the group link.'; });
+    document.getElementById('secondary').addEventListener('click', () => { document.getElementById('name').focus(); });
+    document.getElementById('tertiary').addEventListener('click', () => { document.getElementById('action-status').textContent = 'Example edit cancelled.'; });
+    document.getElementById('directions').addEventListener('click', () => { document.getElementById('directions-status').textContent = 'In the live app, this opens driving directions to the selected place.'; });
+    let saveTimer;
+    const form = document.getElementById('position-form');
+    const saveButton = document.getElementById('save');
+    form.addEventListener('input', () => {
+        clearTimeout(saveTimer);
+        saveButton.disabled = false;
+        saveButton.textContent = 'Save my position';
+        document.getElementById('save-status').textContent = 'Unsaved changes · preview only.';
+    });
+    form.addEventListener('submit', event => {
+        event.preventDefault();
+        let firstInvalid;
+        for (const id of ['name', 'town']) {
+            const input = document.getElementById(id);
+            const invalid = !input.value.trim();
+            input.setAttribute('aria-invalid', String(invalid));
+            document.getElementById(`${id}-error`).hidden = !invalid;
+            if (invalid && !firstInvalid) firstInvalid = input;
+        }
+        if (firstInvalid) { firstInvalid.focus(); return; }
+        saveButton.disabled = true;
+        saveButton.textContent = 'Saving…';
+        document.getElementById('save-status').textContent = 'Saving example position…';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(() => {
+            saveButton.disabled = false;
+            saveButton.textContent = 'Save my position';
+            document.getElementById('save-status').textContent = 'Example saved. No information was sent.';
+        }, 800);
+    });
+</script>
+</body>
+</html>

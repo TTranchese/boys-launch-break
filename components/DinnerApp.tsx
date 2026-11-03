@@ -161,7 +161,7 @@ export default function DinnerApp() {
     if (me && !m.has(me.id)) m.set(me.id, colorFor(data?.participants.length ?? 0));
     return m;
   }, [data?.participants, me]);
-  const colorOf = useCallback((id: string) => colorMap.get(id) ?? "#888", [colorMap]);
+  const colorOf = useCallback((id: string) => colorMap.get(id) ?? "var(--color-muted)", [colorMap]);
 
   const onMapClick = (p: Point) => {
     if (!inTuscany(p)) { setError("Please pick a spot inside Tuscany"); return; }
@@ -310,7 +310,7 @@ export default function DinnerApp() {
     <div className="layout">
       <aside className="panel">
         <header className="brand">
-          <h1>🍷 Cena in Toscana</h1>
+          <h1>Cena in Toscana</h1>
           <p>Drop your position on the map, share the link with friends, and find the best place to have dinner together.</p>
         </header>
 
@@ -336,14 +336,15 @@ export default function DinnerApp() {
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
           </label>
-          <label className="field">
-            <span>Where are you? Search a town or address — or tap the map</span>
+          <div className="field">
+            <label htmlFor="location-search">Where are you? Search a town or address — or tap the map</label>
             <form
               className="row gap"
               onSubmit={(e) => { e.preventDefault(); search(); }}
             >
               <input
                 className="grow"
+                id="location-search"
                 type="search"
                 value={query}
                 placeholder="e.g. Empoli, or Via Roma 1 Siena"
@@ -353,7 +354,7 @@ export default function DinnerApp() {
                 {searching ? "…" : "Search"}
               </button>
             </form>
-          </label>
+          </div>
           {results && (
             <ul className="results">
               {results.length === 0 && <li className="muted small">No places found in Tuscany.</li>}
@@ -380,7 +381,7 @@ export default function DinnerApp() {
             </button>
             {joined && <button className="btn ghost danger" onClick={leave}>Leave</button>}
           </div>
-          {error && <p className="error">{error}</p>}
+          {error && <p className="error" role="alert">{error}</p>}
         </section>
 
         <section className="card">
@@ -410,15 +411,18 @@ export default function DinnerApp() {
 
         <section className="card">
           <h2>3 · Where to eat</h2>
-          <div className="segmented" role="tablist">
-            <button className={strategy === "total" ? "on" : ""} onClick={() => setStrategy("total")}>
+          <fieldset className="segmented" aria-describedby="strategy-description">
+            <legend>Compare places</legend>
+            <label>
+              <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
               Least total driving
-            </button>
-            <button className={strategy === "fair" ? "on" : ""} onClick={() => setStrategy("fair")}>
+            </label>
+            <label>
+              <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
               Fairest drive
-            </button>
-          </div>
-          <p className="muted small">
+            </label>
+          </fieldset>
+          <p className="muted small" id="strategy-description">
             {strategy === "total"
               ? "Restaurants and bars where everyone’s driving times add up to the least."
               : "Restaurants and bars where the longest drive is as short as possible."}{" "}
@@ -445,7 +449,7 @@ export default function DinnerApp() {
                 const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
                 return (
                   <li key={pl.id}>
-                    <button className={i === selectedIdx ? "town on" : "town"} onClick={() => setSelectedIdx(i)}>
+                    <button className={i === selectedIdx ? "town on" : "town"} aria-pressed={i === selectedIdx} onClick={() => setSelectedIdx(i)}>
                       <span className="town-name">
                         {i === 0 ? "🏆 " : `${KIND_ICON[pl.kind] ?? "🍽️"} `}
                         {pl.name}

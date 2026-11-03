@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import "leaflet/dist/leaflet.css";
+import "../public/design-system/tokens.css";
 import "./globals.css";
 
 export const metadata: Metadata = {

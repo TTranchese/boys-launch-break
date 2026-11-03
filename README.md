@@ -25,6 +25,23 @@ Results are cached in memory for 15 minutes so friends polling the same group do
 services repeatedly. If the router is down, times fall back to an estimate (shown with a warning).
 `OSRM_URL` and `OVERPASS_URL` env vars can point to other (e.g. self-hosted) instances.
 
+## Design system
+
+The app's clean, neutral design system is documented in
+[the design-system master](design-system/cena-in-toscana/MASTER.md).
+With the dev server running, open
+[the interactive component preview](http://localhost:3000/design-system/index.html).
+It is isolated from the current app and uses fictional example data.
+
+The app and preview share generated tokens. Styles rebuild automatically before
+`npm run dev` and `npm run build`. After editing design-system sources in an
+already-running dev session, regenerate them with:
+
+```bash
+npm run design-system:build
+npm run design-system:check # generated-file drift + contrast checks (Python 3)
+```
+
 ## Stack
 
 - Next.js (App Router) + React, deployed on Vercel
