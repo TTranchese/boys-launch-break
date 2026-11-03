@@ -51,12 +51,21 @@ code { font-size: 0.9em; }
 .wrap { flex-wrap: wrap; }
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
+.grow { flex: 1; min-width: 0; }
+.results { list-style: none; margin: 0 0 8px; padding: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.results li + li { border-top: 1px solid var(--border); }
+.results li.muted { padding: 8px 10px; }
+.results button {
+  width: 100%; text-align: left; font: inherit; font-size: 0.85rem; padding: 8px 10px;
+  background: transparent; border: 0; color: var(--text); cursor: pointer;
+}
+.results button:hover { background: var(--accent-soft); }
 .error { color: var(--accent); margin: 8px 0 0; font-size: 0.9rem; }
 
 .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
 .field span { font-size: 0.85rem; color: var(--muted); }
 input {
-  font: inherit; padding: 8px 10px; border-radius: 8px;
+  font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 8px;
   border: 1px solid var(--border); background: var(--bg); color: var(--text);
 }
 

@@ -2,7 +2,8 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, Circle } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap, Circle } from "react-leaflet";
 import type { Participant } from "@/lib/db";
 import type { Point, Suggestion } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
@@ -36,6 +37,16 @@ const forkIcon = L.divIcon({
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
+
+function FlyTo({ point }: { point: Point | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (point && !map.getBounds().pad(-0.1).contains([point.lat, point.lng])) {
+      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 11), { duration: 0.8 });
+    }
+  }, [point, map]);
+  return null;
+}
 
 function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
   useMapEvents({ click: (e) => onClick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
@@ -72,6 +83,7 @@ export default function DinnerMap({
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       <ClickHandler onClick={onMapClick} />
+      <FlyTo point={draft} />
 
       {selected &&
         participants.map((p) => (
