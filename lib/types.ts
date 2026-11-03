@@ -22,5 +22,3 @@ export function formatDuration(s: number): string {
   if (min < 60) return `${min} min`;
   return `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`;
 }
-
-export const KIND_ICON: Record<string, string> = { restaurant: "🍝", bar: "🍸", pub: "🍺" };

@@ -1,11 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Share, LoaderCircle } from "lucide-react";
+import {
+  IconContext, CheckIcon, CrosshairIcon, MapTrifoldIcon,
+  NavigationArrowIcon, CarIcon, WarningCircleIcon, ForkKnifeIcon,
+  WineIcon, BeerSteinIcon, ArrowSquareOutIcon, ArrowClockwiseIcon,
+  PlusIcon, CaretDownIcon,
+} from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Point, Strategy } from "@/lib/geo";
 import { inTuscany, TUSCANY_BOUNDS } from "@/lib/geo";
 import {
-  colorFor, formatDuration, KIND_ICON,
+  colorFor, formatDuration,
   type DinnerPlace, type DinnerResponse, type DinnerResult, type GroupResponse, type ParticipantRoute, type RoutesResponse,
 } from "@/lib/types";
 
@@ -34,6 +41,12 @@ type SearchResult = { id: number; label: string; lat: number; lng: number };
 type Me = { id: string; name: string; lat?: number; lng?: number };
 
 export default function DinnerApp() {
+  const [desktop, setDesktop] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
+  const positionStatus = useRef<HTMLParagraphElement>(null);
+  const selectedPlaceButton = useRef<HTMLButtonElement>(null);
+  const mapDialog = useRef<HTMLDialogElement>(null);
+  const [mapMode, setMapMode] = useState<"position" | "places" | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -43,8 +56,8 @@ export default function DinnerApp() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [dinner, setDinner] = useState<DinnerResult | null>(null);
   const [dinnerState, setDinnerState] = useState<"idle" | "loading" | "error">("idle");
-  const [dinnerError, setDinnerError] = useState<string | null>(null);
   const [routes, setRoutes] = useState<ParticipantRoute[]>([]);
+  const [groupError, setGroupError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,6 +68,26 @@ export default function DinnerApp() {
   const [draftLabel, setDraftLabel] = useState<string | null>(null);
   const meRef = useRef<Me | null>(null);
   meRef.current = me;
+
+  useEffect(() => {
+    if (mapMode) {
+      mapDialog.current?.showModal();
+      setMapReady(true);
+    } else {
+      mapDialog.current?.close();
+      setMapReady(false);
+    }
+  }, [mapMode]);
+
+  useEffect(() => {
+    const breakpoint = getComputedStyle(document.documentElement)
+      .getPropertyValue("--breakpoint-desktop").trim();
+    const media = window.matchMedia(`(min-width: ${breakpoint})`);
+    const update = () => setDesktop(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
 
   // --- bootstrap group id (from ?g=) and my identity (localStorage) ---
   useEffect(() => {
@@ -100,9 +133,9 @@ export default function DinnerApp() {
         return load(true);
       }
       setData(json);
-      setError(null);
+      setGroupError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Network error");
+      setGroupError(e instanceof Error ? e.message : "Network error");
     }
   }, [groupId, strategy]);
 
@@ -133,7 +166,6 @@ export default function DinnerApp() {
       })
       .catch((e) => {
         if (e.name === "AbortError") return;
-        setDinnerError(e instanceof Error ? e.message : "Something went wrong");
         setDinnerState("error");
       });
     return () => ctrl.abort();
@@ -175,7 +207,7 @@ export default function DinnerApp() {
 
   const useMyLocation = () => {
     if (!window.isSecureContext || !navigator.geolocation) {
-      setError("Your browser can't share its location here. Search for your town below or tap the map.");
+      setError("Your browser can't share its location here. Search for your town or choose on the map.");
       return;
     }
     setLocating(true);
@@ -184,7 +216,7 @@ export default function DinnerApp() {
         setLocating(false);
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         if (!inTuscany(p)) {
-          setError("You seem to be outside Tuscany. Search for a town below or tap the map.");
+          setError("You seem to be outside Tuscany. Search for a town or choose on the map.");
           return;
         }
         setDraftLabel("your current location");
@@ -202,7 +234,7 @@ export default function DinnerApp() {
         } else if (err.code === err.TIMEOUT) {
           setError("Getting your location took too long. Try again, or search for your town below.");
         } else {
-          setError("Your location isn't available right now. Search for your town below or tap the map.");
+          setError("Your location isn't available right now. Search for your town or choose on the map.");
         }
       },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
@@ -212,6 +244,7 @@ export default function DinnerApp() {
   const search = async () => {
     const q = query.trim();
     if (q.length < 2) return;
+    setError(null);
     setSearching(true);
     setResults(null);
     try {
@@ -236,7 +269,7 @@ export default function DinnerApp() {
           .filter((r) => inTuscany(r)),
       );
     } catch {
-      setError("Search is unavailable right now. Tap the map instead.");
+      setError("Search is unavailable right now. Choose on the map instead.");
     } finally {
       setSearching(false);
     }
@@ -245,7 +278,7 @@ export default function DinnerApp() {
   const pickResult = (r: SearchResult) => {
     setResults(null);
     setQuery("");
-    setDraftLabel(r.label.split(",").slice(0, 2).join(","));
+    setDraftLabel(r.label.split(",")[0]);
     onMapClick({ lat: r.lat, lng: r.lng });
   };
 
@@ -255,7 +288,7 @@ export default function DinnerApp() {
     const src = draft ?? (me.lat != null && me.lng != null ? { lat: me.lat, lng: me.lng } : null);
     const pos = src ? { lat: src.lat, lng: src.lng } : null;
     if (!name) { setError("Enter your name first"); return; }
-    if (!pos) { setError("Click on the map to set your position"); return; }
+    if (!pos) { setError("Search for your town, use your location, or choose on the map"); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/groups/${groupId}/participants/${me.id}`, {
@@ -271,6 +304,7 @@ export default function DinnerApp() {
       setDraft(null);
       setError(null);
       await load();
+      positionStatus.current?.focus();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save");
     } finally {
@@ -304,28 +338,51 @@ export default function DinnerApp() {
 
   const participants = data?.participants ?? [];
   const joined = participants.some((p) => p.id === me?.id);
+  const hasChanges = draft !== null || nameInput.trim() !== (me?.name ?? "");
+  const cancelChanges = () => {
+    setNameInput(me?.name ?? "");
+    setDraft(null);
+    setDraftLabel(null);
+    setQuery("");
+    setResults(null);
+    setError(null);
+    positionStatus.current?.focus();
+  };
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? "?";
 
+  const closeMap = () => {
+    setMapMode(null);
+    if (mapMode === "places") selectedPlaceButton.current?.focus();
+  };
+
+  const mapProps = {
+    participants, colorOf, myId: me?.id ?? "", draft,
+    idealPoint: data?.idealPoint ?? null,
+    places: dinner?.places ?? [], selected, routes,
+    onSelectPlace: (id: string) => {
+      const i = dinner?.places.findIndex((p) => p.id === id) ?? -1;
+      if (i >= 0) setSelectedIdx(i);
+    },
+    onMapClick: onMapTap,
+  };
+
   return (
+    <IconContext.Provider value={{ className: "app-icon", weight: "regular", "aria-hidden": true }}>
     <div className="layout">
       <aside className="panel">
         <header className="brand">
-          <h1>Cena in Toscana</h1>
-          <p>Drop your position on the map, share the link with friends, and find the best place to have dinner together.</p>
+          <div className="row between brand__heading">
+            <h1>Cena in Toscana</h1>
+            <button className="btn ghost share-button" onClick={share} aria-label={copied ? "Link copied!" : "Share link"}>
+              {copied ? <CheckIcon /> : <Share className="app-icon" aria-hidden="true" />}
+              <span className="share-button__label">{copied ? "Link copied!" : "Share link"}</span>
+            </button>
+          </div>
+          <p>Find a place for dinner that works for everyone.</p>
         </header>
 
         <section className="card">
-          <div className="row between">
-            <span className="muted small">Group <code>{groupId ?? "…"}</code></span>
-            <span className="row gap">
-              <button className="btn ghost" onClick={share}>{copied ? "Link copied!" : "Share link"}</button>
-              <button className="btn ghost" onClick={newGroup}>New group</button>
-            </span>
-          </div>
-        </section>
-
-        <section className="card">
-          <h2>{joined ? "Your position" : "1 · Add yourself"}</h2>
+          <h2>{joined ? "Your position" : "Add yourself"}</h2>
           <label className="field">
             <span>Your name</span>
             <input
@@ -337,7 +394,7 @@ export default function DinnerApp() {
             />
           </label>
           <div className="field">
-            <label htmlFor="location-search">Where are you? Search a town or address — or tap the map</label>
+            <label htmlFor="location-search">Your town or address</label>
             <form
               className="row gap"
               onSubmit={(e) => { e.preventDefault(); search(); }}
@@ -347,11 +404,11 @@ export default function DinnerApp() {
                 id="location-search"
                 type="search"
                 value={query}
-                placeholder="e.g. Empoli, or Via Roma 1 Siena"
+                placeholder="e.g. Empoli"
                 onChange={(e) => setQuery(e.target.value)}
               />
               <button className="btn ghost" type="submit" disabled={searching || query.trim().length < 2}>
-                {searching ? "…" : "Search"}
+                {searching ? "Searching…" : "Search"}
               </button>
             </form>
           </div>
@@ -365,27 +422,40 @@ export default function DinnerApp() {
               ))}
             </ul>
           )}
-          <p className="muted small">
-            {draft
-              ? `📌 Pin set${draftLabel ? ` at ${draftLabel}` : ""} — press “${joined ? "Update" : "Save my position"}”.`
-              : joined
-                ? "Search or tap the map to move your pin."
-                : "Tip: you don’t need to share your exact address — a nearby town works fine."}
-          </p>
-          <div className="row gap wrap">
-            <button className="btn primary" onClick={save} disabled={saving}>
-              {saving ? "Saving…" : joined ? "Update" : "Save my position"}
-            </button>
+          <div className="location-options">
             <button className="btn ghost" onClick={useMyLocation} disabled={locating}>
-              {locating ? "Locating…" : "📍 Use my location"}
+              <CrosshairIcon />{locating ? "Locating…" : "My location"}
             </button>
-            {joined && <button className="btn ghost danger" onClick={leave}>Leave</button>}
+            <button className="btn ghost" onClick={() => setMapMode("position")} aria-haspopup="dialog">
+              <MapTrifoldIcon />Choose on map
+            </button>
           </div>
+          <p className="muted small position-status" role="status" ref={positionStatus} tabIndex={-1}>
+            {draft
+              ? `Selected: ${draftLabel ?? "your map pin"}. Save to share with the group.`
+              : joined
+                ? hasChanges ? "You have unsaved changes." : "Your position is saved. Choose a new location to move it."
+                : "A nearby town is enough — no exact address needed."}
+          </p>
+          {(!joined || hasChanges || saving) && (
+            <div className={joined ? "position-actions position-actions--editing" : "position-actions"}>
+              <button className={joined ? "btn ghost" : "btn primary"} onClick={save} disabled={saving}>
+                {saving ? "Saving…" : joined ? "Update position" : "Save my position"}
+              </button>
+              {joined && <button className="btn quiet" onClick={cancelChanges} disabled={saving}>Cancel</button>}
+            </div>
+          )}
           {error && <p className="error" role="alert">{error}</p>}
         </section>
 
         <section className="card">
-          <h2>2 · Who’s coming ({participants.length})</h2>
+          <h2 className="section-heading">
+            <span>Who’s coming</span>
+            <span className="count-chip" role="status" aria-atomic="true">
+              <span aria-hidden="true">{participants.length}</span>
+              <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
+            </span>
+          </h2>
           {participants.length === 0 ? (
             <p className="muted small">Nobody yet. Be the first!</p>
           ) : (
@@ -398,8 +468,8 @@ export default function DinnerApp() {
                   {selected && (() => {
                     const leg = selected.legs.find((l) => l.participantId === p.id);
                     return leg ? (
-                      <span className="muted small push">
-                        🚗 {formatDuration(leg.durationS)} · {(leg.distanceM / 1000).toFixed(0)} km
+                      <span className="muted small push inline-meta">
+                        <CarIcon /> {formatDuration(leg.durationS)} · {(leg.distanceM / 1000).toFixed(0)} km
                       </span>
                     ) : null;
                   })()}
@@ -410,48 +480,74 @@ export default function DinnerApp() {
         </section>
 
         <section className="card">
-          <h2>3 · Where to eat</h2>
-          <fieldset className="segmented" aria-describedby="strategy-description">
-            <legend>Compare places</legend>
-            <label>
-              <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
-              Least total driving
-            </label>
-            <label>
-              <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
-              Fairest drive
-            </label>
-          </fieldset>
-          <p className="muted small" id="strategy-description">
-            {strategy === "total"
-              ? "Restaurants and bars where everyone’s driving times add up to the least."
-              : "Restaurants and bars where the longest drive is as short as possible."}{" "}
-            Times are by car on real roads.
-          </p>
+          <h2>Where to eat</h2>
+          {Boolean(dinner?.places.length) && (
+            <>
+              <div className="mobile-map-link">
+                <button className="btn ghost" onClick={() => setMapMode("places")} aria-haspopup="dialog"><MapTrifoldIcon />View places on map</button>
+              </div>
+              <fieldset className="segmented" aria-describedby="strategy-description">
+                <legend>Compare places</legend>
+                <label>
+                  <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
+                  Least total driving
+                </label>
+                <label>
+                  <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
+                  Fairest drive
+                </label>
+              </fieldset>
+              <p className="muted small" id="strategy-description">
+                {strategy === "total"
+                  ? "Restaurants and bars where everyone’s driving times add up to the least."
+                  : "Restaurants and bars where the longest drive is as short as possible."}{" "}
+                Times are by car on real roads.
+              </p>
+            </>
+          )}
           {dinner?.routing === "estimate" && (
-            <p className="muted small">⚠️ The route service is busy, so these times are estimates.</p>
+            <p className="muted small inline-meta"><WarningCircleIcon />The route service is busy, so these times are estimates.</p>
           )}
 
+          <div role="status">
+            {dinnerState === "loading" && dinner && (
+              <div className="loading-state loading-state--refreshing">
+                <LoaderCircle className="app-icon spinner" aria-hidden="true" />
+                <p className="loading-state__text">Updating drive times…</p>
+              </div>
+            )}
+          </div>
           {participants.length === 0 ? (
-            <p className="muted small">Add at least one position to get suggestions.</p>
+            <p className="muted small">Save your position to see places for dinner.</p>
           ) : dinnerState === "loading" && !dinner ? (
-            <p className="muted small">🚗 Finding restaurants and calculating drive times…</p>
+            <div className="loading-state" role="status">
+              <LoaderCircle className="app-icon spinner" aria-hidden="true" />
+              <p className="loading-state__text">Finding places to eat…</p>
+            </div>
           ) : dinnerState === "error" ? (
-            <p className="error">
-              {dinnerError}{" "}
-              <button className="btn ghost" onClick={() => setRetry((n) => n + 1)}>Retry</button>
-            </p>
+            <div className="availability-state" role="alert">
+              <div className="availability-state__heading">
+                <WarningCircleIcon />
+                <h3 className="availability-state__title">Places are unavailable</h3>
+              </div>
+              <p className="muted small availability-state__description">
+                We couldn’t load dinner suggestions. Your group and saved positions are still here.
+              </p>
+              <button className="btn ghost availability-state__retry" onClick={() => setRetry((n) => n + 1)}>
+                <ArrowClockwiseIcon />Try again
+              </button>
+            </div>
           ) : dinner && dinner.places.length === 0 ? (
             <p className="muted small">No restaurants or bars found in the area on OpenStreetMap.</p>
           ) : (
-            <ol className={`towns${dinnerState === "loading" ? " stale" : ""}`}>
+            <ol className="towns">
               {dinner?.places.map((pl, i) => {
                 const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
                 return (
                   <li key={pl.id}>
-                    <button className={i === selectedIdx ? "town on" : "town"} aria-pressed={i === selectedIdx} onClick={() => setSelectedIdx(i)}>
+                    <button ref={i === selectedIdx ? selectedPlaceButton : null} className={i === selectedIdx ? "town on" : "town"} aria-pressed={i === selectedIdx} onClick={() => setSelectedIdx(i)}>
                       <span className="town-name">
-                        {i === 0 ? "🏆 " : `${KIND_ICON[pl.kind] ?? "🍽️"} `}
+                        {pl.kind === "bar" ? <WineIcon /> : pl.kind === "pub" ? <BeerSteinIcon /> : <ForkKnifeIcon />}
                         {pl.name}
                       </span>
                       <span className="muted small">
@@ -465,6 +561,34 @@ export default function DinnerApp() {
                         )}
                       </span>
                     </button>
+                    {i === selectedIdx && (
+                      <div className="row gap wrap town-actions">
+                        <a
+                          className="btn primary"
+                          href={`https://www.google.com/maps/dir/?api=1&destination=${pl.lat},${pl.lng}&travelmode=driving`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <NavigationArrowIcon />Directions
+                        </a>
+                        <a
+                          className="btn ghost"
+                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${pl.name} ${pl.town ?? ""}`.trim())}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Reviews & hours<ArrowSquareOutIcon />
+                        </a>
+                        <a
+                          className="btn ghost"
+                          href={`https://www.openstreetmap.org/${pl.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Place details<ArrowSquareOutIcon />
+                        </a>
+                      </div>
+                    )}
                   </li>
                 );
               })}
@@ -472,59 +596,36 @@ export default function DinnerApp() {
           )}
         </section>
 
-        {selected && (
-          <section className="card">
-            <h2>{KIND_ICON[selected.kind] ?? "🍽️"} {selected.name}</h2>
-            <p className="muted small">
-              {[selected.cuisine, selected.town].filter(Boolean).join(" · ") || "Details on OpenStreetMap"}
-            </p>
-            <div className="row gap wrap">
-              <a
-                className="btn primary"
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selected.lat},${selected.lng}&travelmode=driving`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                🚗 Directions
-              </a>
-              <a
-                className="btn ghost"
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name} ${selected.town ?? ""}`.trim())}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Reviews & hours ↗
-              </a>
-              <a
-                className="btn ghost"
-                href={`https://www.openstreetmap.org/${selected.id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                OSM ↗
-              </a>
-            </div>
-          </section>
-        )}
+        {groupError && <p className="error" role="alert">{groupError}</p>}
+        <details className="group-options">
+          <summary className="group-options__toggle">Group options<CaretDownIcon /></summary>
+          <div className="row between group-options__content">
+            <span className="muted small">Group <code>{groupId ?? "…"}</code></span>
+            <button className="btn ghost" onClick={newGroup}><PlusIcon />New group</button>
+          </div>
+          {joined && <button className="btn quiet danger-text group-options__leave" onClick={leave}>Leave group</button>}
+        </details>
       </aside>
 
-      <main className="map">
-        <DinnerMap
-          participants={participants}
-          colorOf={colorOf}
-          myId={me?.id ?? ""}
-          draft={draft}
-          idealPoint={data?.idealPoint ?? null}
-          places={dinner?.places ?? []}
-          selected={selected}
-          routes={routes}
-          onSelectPlace={(id) => {
-            const i = dinner?.places.findIndex((p) => p.id === id) ?? -1;
-            if (i >= 0) setSelectedIdx(i);
-          }}
-          onMapClick={onMapTap}
-        />
+      <main className="map" aria-label="Group map">
+        {desktop && <DinnerMap {...mapProps} />}
       </main>
+      <dialog className="map-dialog" ref={mapDialog} onClose={closeMap} aria-labelledby="map-title" aria-describedby="map-help">
+        <div className="map-dialog__header">
+          <h2 id="map-title">{mapMode === "position" ? "Choose your position" : "Places for dinner"}</h2>
+          <button className="btn primary" onClick={() => mapDialog.current?.close()} autoFocus><CheckIcon />Done</button>
+        </div>
+        <p className="muted small map-dialog__help" id="map-help" role="status">
+          {mapMode === "position"
+            ? draft ? "Pin selected. Tap Done to return and save your position." : "Tap the map to place your pin, then tap Done."
+            : selected ? `Selected: ${selected.name}. Tap Done to see its details.` : "Tap a numbered pin to select a place."}
+        </p>
+        {error && mapMode === "position" && <p className="error map-dialog__error" role="alert">{error}</p>}
+        <div className="map-dialog__canvas">
+          {mapMode && mapReady && <DinnerMap {...mapProps} onMapClick={mapMode === "position" ? onMapTap : () => {}} />}
+        </div>
+      </dialog>
     </div>
+    </IconContext.Provider>
   );
 }

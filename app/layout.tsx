@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource/fraunces/latin-600.css";
 import "leaflet/dist/leaflet.css";
 import "../public/design-system/tokens.css";
 import "./globals.css";

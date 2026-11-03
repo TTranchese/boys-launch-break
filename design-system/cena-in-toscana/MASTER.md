@@ -14,7 +14,7 @@ Help friends in Tuscany choose a place to meet by comparing actual driving times
 
 ## Visual language
 
-White panels on a cool off-white canvas; near-black primary actions; a restrained blue focus/selection accent. No decorative gradients, glass, warm rustic palette, food emoji controls, oversized marketing headers, or shadows on every card. One consistent SVG icon family, 20px, 2px strokes. Use text for categories where icons do not add meaning. Start with the system sans stack; no remote font dependency. An Inter substitution is optional only after font-loading and layout checks.
+White panels on a cool off-white canvas; near-black primary actions; a restrained blue focus/selection accent. No decorative gradients, glass, warm rustic palette, food emoji controls, oversized marketing headers, or shadows on every card. Phosphor regular SVG icons, 20px, with text labels retained for actions. The share action uses Lucide Share (not Share2); dinner loading and refresh use Lucide LoaderCircle with an 800ms rotation, stopped under reduced motion while the status text remains. Use text for categories where icons do not add meaning. Fraunces 600 gives the app name and display titles a distinct serif voice (24px on phones, 28px on desktop). Section headings, forms, metadata, and buttons use the system sans stack. The Latin subset is self-hosted through Fontsource with font-display: swap, with no runtime font-service request.
 
 ### Color roles
 
@@ -26,7 +26,9 @@ White panels on a cool off-white canvas; near-black primary actions; a restraine
 | Text | #191c20 | #f4f5f6 | Headings, names, values |
 | Muted text | #5c6470 | #adb5c1 | Supporting copy; still readable |
 | Divider | #dce0e5 | #414955 | Decorative boundaries only |
-| Control border | #7b8491 | #8793a3 | Inputs and required control boundaries |
+| Card boundary | #eaedf0 | #2c323a | Quiet panel outlines |
+| Field edge | #848c98 | #626e7d | Input bottom boundary |
+| Control border | #7b8491 | #707b8a | Inputs and required control boundaries |
 | Action / on action | #22262c / #ffffff | #eef0f3 / #191c20 | Primary CTA |
 | Accent | #2458bd | #9bbcff | Focus, text links, selected indicator |
 | Selected surface | #edf3ff | #1e304e | Selected place or option |
@@ -34,7 +36,7 @@ White panels on a cool off-white canvas; near-black primary actions; a restraine
 | Warning / subtle | #805300 / #fff6df | #f0cd7a / #302714 | Estimated times |
 | Danger / subtle | #b32935 / #fff0f1 | #ffacb4 / #361e23 | Field errors, failed requests |
 
-Colors are implemented in `tokens.scss`. Components consume semantic or component variables, never raw palette values. Dark mode remaps semantic roles; it is not a CSS inversion. Focus has a 3px outline with 3px offset. Muted text is not disabled text. Disabled controls use native disabled semantics, explicit styling, and nearby explanation where the reason is not obvious.
+Colors are implemented in `tokens.scss`. Components consume semantic or component variables, never raw palette values. Dark mode remaps semantic roles; it is not a CSS inversion. Cards use the quieter `--panel-border` rather than the general divider. Fields use the canvas fill, a quiet perimeter, and a contrasting bottom edge; the bottom edge defines the control boundary without a strong four-sided box. Focus has a 3px outline with 3px offset. Muted text is not disabled text. Disabled controls use native disabled semantics, explicit styling, and nearby explanation where the reason is not obvious.
 
 ### Typography
 
@@ -44,7 +46,8 @@ Colors are implemented in `tokens.scss`. Components consume semantic or componen
 | Page title | 28 / 36 | 600 | App title or task title |
 | Section title | 20 / 28 | 600 | Group, results, position |
 | Body | 16 / 24 | 400 | Inputs, descriptions, primary content |
-| Label | 14 / 20 | 600 | Buttons, field labels |
+| Primary action | 16 / 24 | 600 | Main buttons and directions |
+| Label | 14 / 20 | 600 | Secondary buttons, field labels |
 | Supporting | 14 / 20 | 400 | Metadata, validation, helper text |
 | Caption | 12 / 16 | 500 | Nonessential annotations only |
 
@@ -52,7 +55,7 @@ Use rem equivalents in implementation. Allow zoom and text enlargement. Names an
 
 ### Geometry and motion
 
-Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64px. Use 8px between related controls, 16px within groups, 24px card padding, 32px between sections. A 4px exception supports tight label/helper relationships. Radius: 6px small, 10px controls, 14px panels, full only for badges and avatars. Use a 1px divider, 2px selected border, and one overlay shadow for menus/dialogs. Ordinary cards have no shadow.
+Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64px. Use 8px between related controls, 16px within groups, 16px compact card padding on phones and tablets, 24px comfortable card padding in the desktop planning column, 32px between sections. Use `--panel-padding-compact` and `--panel-padding-comfortable` through the contextual `--panel-padding` alias. The documentation preview switches to comfortable padding at its two-column breakpoint. A 4px exception supports tight label/helper relationships. Radius: 6px small, 10px controls, 14px panels, full only for badges and avatars. Use a 1px divider, 2px selected border, and one overlay shadow for menus/dialogs. Ordinary cards have no shadow.
 
 Control minimum height 44px; comfortable controls 48px. The project adopts 44×44 CSS px targets for touch friendliness, including map buttons. At least 8px between neighboring actions. Motion: 120ms feedback, 180ms surface/state changes, 240ms overlay entrance, 160ms exit. Animate color/opacity/transform, not layout dimensions. Reduced motion removes movement, smooth map flights, and animated loading; loading text remains.
 
@@ -78,14 +81,17 @@ Layers: `--neutral-*` and size values are primitives; `--color-*` are theme-spec
 | Participant row | Initial/name, “you” text when relevant, matching map identity, drive duration | Saved, own draft, missing route; never rely on color alone |
 | Place option | Native radio within a labeled choice group; rank, name, category/town, total + longest drive | Default, hover, focus, selected, refreshing; best-ranked and user-selected are separate concepts |
 | Selected place | Name, available metadata, participant journey breakdown, directions primary | Routes pending, ready, partial failure, estimated times; external details clearly labeled |
+| Participant count | Neutral rounded chip beside the heading; system sans numerals with a contextual live label | Zero, one, plural, long count |
 | Badge | Short text, optional icon; no interactive styling for plain status | Saved, estimated, updating; full labels wrap |
 | Inline message | Icon + cause + recovery; errors near affected task; warning never implies failure | Informational, success, warning, danger |
 | Shared header | Name, compact purpose, invite and new-group actions; contextual copy confirmation | Link ready, copied, share unavailable, copy failed |
 | Dialog | Only for a consequential action that needs a decision; clear title, close/cancel | Keyboard trap, Escape, focus restored to trigger, background inert |
 
-Primary action progression: before joining, **Save my position**; after joining, **Invite friends**; after selecting a place, **Get directions**. Keep update/search actions subordinate once they are no longer the main task. Starting a new group navigates to a new link; do not label it as deleting the old group. Venue selection changes the preview only; do not imply a booking or confirmed group agreement.
+Primary action progression: before joining, **Save my position**; after joining, **Invite friends**; after selecting a place, **Get directions**. Show Update position only for unsaved edits and style it as a secondary action with Cancel. Hide the update actions when the saved position is unchanged. Leave group is a quiet destructive action inside Group options. Starting a new group navigates to a new link; do not label it as deleting the old group. Venue selection changes the preview only; do not imply a booking or confirmed group agreement.
 
 ## Map language
+
+Tuscany uses a bundled, simplified ISTAT region boundary, including islands. A non-interactive outside mask subdues neighboring areas, and the Tuscany control restores the regional view. The map credits the boundary source and license.
 
 Person: circular initial/name marker. Draft: dashed ring plus “Unsaved” label. Venue: numbered pin matching list rank. Selected venue: same number with selected halo, not an unrelated trophy. The ranking algorithm's ideal point stays hidden by default or appears only under an explicitly labeled explanation; it is not a venue.
 
@@ -115,9 +121,10 @@ Use the existing English UI consistently until localization is implemented; keep
 | One participant | Showing places near you. Invite friends to compare everyone’s drive. |
 | Total strategy | Minimize everyone’s combined driving time. |
 | Fair strategy | Minimize the longest individual drive. |
-| Initial calculation | Finding places and comparing drive times… |
-| Refresh | Updating drive times… Keep old results visible and label them as updating. |
+| Initial calculation | Center a 24px spinner above “Finding places to eat…” with 12px separation and 24px vertical padding. |
+| Refresh | Updating drive times… Keep old results at full opacity and label them as updating. |
 | Estimated routing | Drive times are estimates. Road routing is temporarily unavailable. |
+| Suggestions unavailable | Places are unavailable. We couldn’t load dinner suggestions. Your group and saved positions are still here. Try again. |
 | Search failure | Location search is unavailable. Try again or choose a point on the map. |
 | Save failure | Your position wasn’t saved. Check your connection and try again. |
 

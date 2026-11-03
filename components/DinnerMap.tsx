@@ -1,12 +1,49 @@
 "use client";
 
 import L from "leaflet";
-import { Fragment, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
+import { Fragment, useEffect, useRef } from "react";
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMapEvents, useMap } from "react-leaflet";
+import { CornersOutIcon, CarIcon } from "@phosphor-icons/react";
+import tuscanyBoundary from "@/lib/tuscany-boundary.json";
 import type { Participant } from "@/lib/db";
 import type { Point } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
 import { formatDuration, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
+
+const regionRings = tuscanyBoundary as L.LatLngTuple[][];
+const worldRing: L.LatLngTuple[] = [
+  [85, -180], [85, 180], [-85, 180], [-85, -180],
+];
+
+function TuscanyFocus() {
+  const map = useMap();
+  const control = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!control.current) return;
+    L.DomEvent.disableClickPropagation(control.current);
+    L.DomEvent.disableScrollPropagation(control.current);
+  }, []);
+  return <>
+    <Polygon positions={[worldRing, ...regionRings]} pathOptions={{
+      className: "map-context-mask", fillRule: "evenodd",
+      stroke: false, interactive: false,
+    }} />
+    {regionRings.map((ring, i) => (
+      <Polygon key={i} positions={ring} pathOptions={{
+        className: "map-region-outline", fill: false, interactive: false,
+      }} />
+    ))}
+    <div className="map-region-control" ref={control}>
+      <button className="btn ghost" aria-label="Show all Tuscany" onClick={() =>
+        map.fitBounds(L.latLngBounds(regionRings.flat()), {
+          ...mapMotion(), padding: [16, 16], maxZoom: 9,
+        })
+      }>
+        <CornersOutIcon />Tuscany
+      </button>
+    </div>
+  </>;
+}
 
 const escapeHtml = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -42,6 +79,17 @@ function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
   return null;
 }
 
+/** Keep tiles aligned when a responsive map surface becomes visible. */
+function ResizeMap() {
+  const map = useMap();
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
+  return null;
+}
+
 /** Pan to a newly picked pin when it's off screen. */
 function FlyTo({ point }: { point: Point | null }) {
   const map = useMap();
@@ -59,7 +107,7 @@ function FitSelection({ points, selectedId }: { points: Point[]; selectedId: str
   useEffect(() => {
     if (!selectedId || points.length === 0) return;
     const b = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-    if (!map.getBounds().contains(b)) map.flyToBounds(b.pad(0.15), { ...mapMotion(), maxZoom: 13 });
+    map.flyToBounds(b.pad(0.15), { ...mapMotion(), maxZoom: 13 });
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
@@ -93,9 +141,11 @@ export default function DinnerMap({
       className="dinner-map"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>'
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a> · boundary © <a href="https://github.com/guglielmo/geojson-italy">ISTAT</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <TuscanyFocus />
+      <ResizeMap />
       <ClickHandler onClick={onMapClick} />
       <FlyTo point={draft} />
       <FitSelection points={selected ? [...participants, selected] : []} selectedId={selected?.id ?? null} />
@@ -126,7 +176,7 @@ export default function DinnerMap({
                 {p.id === myId && " (you)"}
                 {leg && selected && (
                   <>
-                    <br />🚗 {formatDuration(leg.durationS)} to {selected.name}
+                    <br /><CarIcon /> {formatDuration(leg.durationS)} to {selected.name}
                   </>
                 )}
               </Popup>

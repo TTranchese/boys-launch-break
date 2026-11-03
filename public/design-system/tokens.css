@@ -26,12 +26,20 @@
     --space-8: calc(var(--space-unit) * 4);
     --space-12: calc(var(--space-unit) * 6);
     --space-16: calc(var(--space-unit) * 8);
+    --font-title: "Fraunces", Georgia, serif;
+    --icon-size: 20px;
+    --chip-min-size: 28px;
+    --map-context-opacity: 0.72;
+    --map-boundary-width: 2px;
+    --map-layer-controls: 1000;
     --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --text-caption: 0.75rem;
     --text-label: 0.875rem;
     --text-body: 1rem;
+    --text-action: var(--text-body);
     --text-section: 1.25rem;
     --text-title: 1.75rem;
+    --text-brand-compact: 1.5rem;
     --text-display: 2.5rem;
     --weight-normal: 400;
     --weight-medium: 500;
@@ -52,6 +60,8 @@
     --duration-enter: 240ms;
     --duration-exit: 160ms;
     --duration-map: 240ms;
+    --duration-spinner: 800ms;
+    --spinner-size: var(--space-6);
     --ease-standard: cubic-bezier(0.2, 0, 0, 1);
     --layer-base: 0;
     --layer-sticky: 10;
@@ -69,6 +79,8 @@
     --color-text: var(--neutral-950);
     --color-muted: var(--neutral-600);
     --color-border: var(--neutral-200);
+    --color-panel-border: #eaedf0;
+    --color-field-edge: #848c98;
     --color-control-border: var(--neutral-500);
     --color-action: var(--neutral-850);
     --color-action-hover: var(--neutral-700);
@@ -108,7 +120,9 @@
     --color-text: var(--neutral-50);
     --color-muted: var(--neutral-400);
     --color-border: var(--neutral-700);
-    --color-control-border: #8793a3;
+    --color-panel-border: #2c323a;
+    --color-field-edge: #626e7d;
+    --color-control-border: #707b8a;
     --color-action: var(--neutral-100);
     --color-action-hover: var(--neutral-200);
     --color-action-pressed: var(--neutral-400);
@@ -144,16 +158,21 @@
     --button-fg: var(--color-on-action);
     --button-height: 44px;
     --button-radius: var(--radius-control);
-    --field-bg: var(--color-surface);
-    --field-border: var(--color-control-border);
+    --field-bg: var(--color-canvas);
+    --field-border: var(--color-panel-border);
+    --field-edge: var(--color-field-edge);
     --field-height: 48px;
     --panel-bg: var(--color-surface);
-    --panel-padding: var(--space-6);
+    --panel-border: var(--color-panel-border);
+    --panel-padding-compact: var(--space-4);
+    --panel-padding-comfortable: var(--space-6);
+    --panel-padding: var(--panel-padding-compact);
     --panel-radius: var(--radius-panel);
     --focus-width: 3px;
     --focus-offset: 3px;
     --layout-planning-width: 400px;
-    --layout-mobile-map-height: 320px;
+    --layout-map-dialog-width: 800px;
+    --layout-map-dialog-height: 80dvh;
     --map-person-size: 36px;
     --map-venue-size: 36px;
     --map-selected-size: 44px;
@@ -166,7 +185,6 @@
     --map-layer-draft: 600;
     --map-layer-selected: 1000;
     --state-disabled-opacity: 0.7;
-    --state-refreshing-opacity: 0.7;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -178,7 +196,9 @@
     --color-text: var(--neutral-50);
     --color-muted: var(--neutral-400);
     --color-border: var(--neutral-700);
-    --color-control-border: #8793a3;
+    --color-panel-border: #2c323a;
+    --color-field-edge: #626e7d;
+    --color-control-border: #707b8a;
     --color-action: var(--neutral-100);
     --color-action-hover: var(--neutral-200);
     --color-action-pressed: var(--neutral-400);

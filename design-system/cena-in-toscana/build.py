@@ -48,6 +48,9 @@ pairs = [
     ("accent", "surface", 4.5), ("accent", "canvas", 4.5),
     ("accent", "selected", 3), ("control-border", "surface", 3),
     ("control-border", "subtle", 3),
+    ("control-border", "selected", 3),
+    # Filled inputs use a quiet outline and a contrasting bottom edge.
+    ("field-edge", "canvas", 3), ("field-edge", "surface", 3),
     ("success", "success-subtle", 4.5),
     ("warning", "warning-subtle", 4.5),
     ("danger", "danger-subtle", 4.5), ("danger", "subtle", 4.5),

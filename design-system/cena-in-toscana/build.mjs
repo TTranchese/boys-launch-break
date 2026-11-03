@@ -34,9 +34,9 @@ emit(path.join(output, "preview.css"), readFileSync(path.join(source, "preview.s
 // CSS custom properties do not resolve in media queries. Resolve only the
 // breakpoint expression at generation time; all other tokens stay live.
 const appStyles = readFileSync(path.join(source, "app.scss"), "utf8")
-    .replace(/@media\s*\(width < var\((--[\w-]+)\)\)/g, (_, token) => {
+    .replace(/@media\s*\(width (<|>=) var\((--[\w-]+)\)\)/g, (_, operator, token) => {
         if (!variables[token]) throw new Error(`Unknown breakpoint: ${token}`);
-        return `@media (width < ${variables[token]})`;
+        return `@media (width ${operator} ${variables[token]})`;
     });
 const appSource = readFileSync(path.join(source, "app.scss"), "utf8");
 if (/#[\da-f]{3,8}\b|\brgba?\(|\d+(?:px|rem|ms)\b/i.test(appSource)) {
