@@ -13,8 +13,10 @@ import type { Participant } from "@/lib/db";
 import type { Point } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
 import { formatDuration, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
+import { useI18n } from "./I18nProvider";
 
-const MAP_ATTRIBUTION = '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>';
+const mapAttribution = (routesBy: string) =>
+  `<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · ${routesBy} <a href="https://project-osrm.org">OSRM</a>`;
 
 /**
  * react-leaflet's MapContainer removes the map whenever its effect is cleaned up, but React
@@ -90,12 +92,20 @@ function BrandedBasemap() {
       style: createMapStyle(), attributionControl: false,
     });
     layer.addTo(map);
-    map.attributionControl.addAttribution(MAP_ATTRIBUTION);
-    return () => {
-      map.attributionControl.removeAttribution(MAP_ATTRIBUTION);
-      map.removeLayer(layer);
-    };
+    return () => { map.removeLayer(layer); };
   }, [map]);
+  return null;
+}
+
+/** Kept apart from the basemap so switching language swaps the credits, not the whole map. */
+function Attribution() {
+  const map = useMap();
+  const { t } = useI18n();
+  useEffect(() => {
+    const attribution = mapAttribution(t.map.attributionRoutes);
+    map.attributionControl.addAttribution(attribution);
+    return () => { map.attributionControl.removeAttribution(attribution); };
+  }, [map, t]);
   return null;
 }
 
@@ -109,6 +119,7 @@ const CREDITS_OPEN_MS = 5000;
  */
 function MapCredits() {
   const map = useMap();
+  const { t } = useI18n();
   const [open, setOpen] = useState(true);
   const [host, setHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
@@ -135,7 +146,7 @@ function MapCredits() {
   }, [map, open]);
   return host && createPortal(
     <button className="map-credits__toggle" aria-expanded={open}
-      aria-label={open ? "Hide map credits" : "Show map credits"}
+      aria-label={open ? t.map.hideCredits : t.map.showCredits}
       onClick={() => setOpen((o) => !o)}>
       <span className="map-credits__dot"><InfoIcon weight="bold" /></span>
     </button>,
@@ -181,6 +192,7 @@ const groupBounds = (points: Point[]) => {
 
 function GroupFocus({ points }: { points: Point[] }) {
   const map = useMap();
+  const { t } = useI18n();
   const control = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!control.current) return;
@@ -190,7 +202,7 @@ function GroupFocus({ points }: { points: Point[] }) {
   return (
     <div className="map-group-control" ref={control}>
       <button className="btn ghost" onClick={() => fitTo(map, groupBounds(points), GROUP_MAX_ZOOM)}>
-        <CornersOutIcon />Show everyone
+        <CornersOutIcon />{t.map.showEveryone}
       </button>
     </div>
   );
@@ -309,6 +321,7 @@ export type DinnerMapProps = {
 export default function DinnerMap({
   participants, colorOf, myId, draft, idealPoint, places, selected, routes, focus, onMapClick, onSelectPlace,
 }: DinnerMapProps) {
+  const { t } = useI18n();
   const b = TUSCANY_BOUNDS;
   const bounds = L.latLngBounds([b.south, b.west], [b.north, b.east]);
   const routeOf = (id: string) => routes.find((r) => r.participantId === id);
@@ -343,6 +356,7 @@ export default function DinnerMap({
       className="dinner-map"
     >
       <BrandedBasemap />
+      <Attribution />
       <MapCredits />
       <GroupFocus points={[...participants, ...(selected ? [selected] : []), ...(draft ? [draft] : [])]} />
       <ResizeMap />
@@ -377,10 +391,10 @@ export default function DinnerMap({
             <Marker key={p.id} position={[p.lat, p.lng]} icon={personIcon(p)} zIndexOffset={tokenNumber("--map-layer-person")} title={p.name}>
               <Popup>
                 <strong>{p.name}</strong>
-                {p.id === myId && " (you)"}
+                {p.id === myId && t.map.you}
                 {leg && selected && (
                   <>
-                    <br /><CarIcon /> {formatDuration(leg.durationS)} to {selected.name}
+                    <br /><CarIcon /> {t.map.driveTo(formatDuration(leg.durationS), selected.name)}
                   </>
                 )}
               </Popup>
@@ -389,14 +403,14 @@ export default function DinnerMap({
         })}
 
       {draft && (
-        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", tiltOf(myId), { draft: true })} zIndexOffset={tokenNumber("--map-layer-draft")} title="Unsaved position">
-          <Popup>Your new position — press “Save” to share it</Popup>
+        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", tiltOf(myId), { draft: true })} zIndexOffset={tokenNumber("--map-layer-draft")} title={t.map.unsavedPosition}>
+          <Popup>{t.map.unsavedPositionHint}</Popup>
         </Marker>
       )}
 
       {idealPoint && (
         <Marker position={[idealPoint.lat, idealPoint.lng]} icon={idealIcon}>
-          <Popup>Straight-line optimum (as the crow flies)</Popup>
+          <Popup>{t.map.idealPoint}</Popup>
         </Marker>
       )}
 
@@ -413,11 +427,11 @@ export default function DinnerMap({
       )}
 
       {selected && (
-        <Marker position={[selected.lat, selected.lng]} icon={placeIcon(places.findIndex((pl) => pl.id === selected.id) + 1, true)} zIndexOffset={tokenNumber("--map-layer-selected")} title={`Selected: ${selected.name}`}>
+        <Marker position={[selected.lat, selected.lng]} icon={placeIcon(places.findIndex((pl) => pl.id === selected.id) + 1, true)} zIndexOffset={tokenNumber("--map-layer-selected")} title={t.map.selectedPlace(selected.name)}>
           <Popup>
             <strong>{selected.name}</strong>
             <br />
-            Average {formatDuration(selected.totalS / Math.max(1, selected.legs.length))} · longest {formatDuration(selected.maxS)}
+            {t.map.placeTimes(formatDuration(selected.totalS / Math.max(1, selected.legs.length)), formatDuration(selected.maxS))}
           </Popup>
         </Marker>
       )}

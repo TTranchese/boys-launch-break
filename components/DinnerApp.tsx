@@ -17,10 +17,17 @@ import {
 } from "@/lib/types";
 
 import type { MapFocus } from "./DinnerMap";
+import { useI18n } from "./I18nProvider";
+import { LOCALES, LOCALE_NAMES, type Messages, type ServerErrorCode } from "@/lib/i18n";
+
+function MapLoading() {
+  const { t } = useI18n();
+  return <div className="map-loading">{t.map.loading}</div>;
+}
 
 const DinnerMap = dynamic(() => import("./DinnerMap"), {
   ssr: false,
-  loading: () => <div className="map-loading">Loading map…</div>,
+  loading: () => <MapLoading />,
 });
 
 const randomId = (len = 10) => {
@@ -51,22 +58,24 @@ const directionsUrl = (pl: DinnerPlace) =>
   `https://www.google.com/maps/dir/?api=1&destination=${pl.lat},${pl.lng}&travelmode=driving`;
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const KIND_LABEL = { restaurant: "Restaurant", bar: "Bar", pub: "Pub" } as const;
 /** OpenStreetMap cuisine tags, tidied: "italian, italian pizza, pizza" reads "Italian pizza". */
-const cuisineLabel = (raw?: string) => {
+const cuisineLabel = (raw: string | undefined, names: Messages["cuisines"]) => {
   if (!raw) return null;
   const tags = [...new Set(raw.split(/[;,]/).map((t) => t.trim().replace(/_/g, " ").toLowerCase()).filter(Boolean))];
   // Drop a tag another tag already says ("pizza" inside "italian pizza").
   const kept = tags.filter((t) => !tags.some((o) => o !== t && o.split(" ").includes(t)));
-  return kept.length ? capitalize(kept.slice(0, 2).join(", ")) : null;
+  // Two tags can translate to the same word ("seafood" and "fish" are both "pesce").
+  const named = [...new Set(kept.map((t) => names[t] ?? t))];
+  return named.length ? capitalize(named.slice(0, 2).join(", ")) : null;
 };
 /** Always one line, so every result row has the same shape. */
-const placeDescription = (pl: DinnerPlace) =>
-  [(pl.kind === "restaurant" && cuisineLabel(pl.cuisine)) || KIND_LABEL[pl.kind], pl.town].filter(Boolean).join(" · ");
+const placeDescription = (pl: DinnerPlace, t: Messages) =>
+  [(pl.kind === "restaurant" && cuisineLabel(pl.cuisine, t.cuisines)) || t.kind[pl.kind], pl.town].filter(Boolean).join(" · ");
 const averageS = (pl: DinnerPlace) => pl.totalS / Math.max(1, pl.legs.length);
 const minutes = (s: number) => Math.round(s / 60);
 
 export default function DinnerApp() {
+  const { t, locale, setLocale } = useI18n();
   const locationField = useRef<HTMLDivElement>(null);
   const positionStatus = useRef<HTMLParagraphElement>(null);
   const layout = useRef<HTMLDivElement>(null);
@@ -219,9 +228,9 @@ export default function DinnerApp() {
       setData(json);
       setGroupError(null);
     } catch (e) {
-      setGroupError(e instanceof Error ? e.message : "Network error");
+      setGroupError(e instanceof Error ? e.message : t.errors.network);
     }
-  }, [groupId, strategy]);
+  }, [groupId, strategy, t]);
 
   useEffect(() => {
     if (!groupId || !me) return;
@@ -289,7 +298,7 @@ export default function DinnerApp() {
   const colorOf = useCallback((id: string) => colorMap.get(id) ?? "var(--color-muted)", [colorMap]);
 
   const onMapClick = (p: Point) => {
-    if (!inTuscany(p)) { setError("Please pick a spot inside Tuscany"); return; }
+    if (!inTuscany(p)) { setError(t.errors.pickInsideTuscany); return; }
     setError(null);
     setDraft(p);
   };
@@ -302,7 +311,7 @@ export default function DinnerApp() {
 
   const useMyLocation = () => {
     if (!window.isSecureContext || !navigator.geolocation) {
-      setError("Your browser can't share its location here. Search for your town or choose on the map.");
+      setError(t.errors.geoUnsupported);
       return;
     }
     setLocating(true);
@@ -311,10 +320,10 @@ export default function DinnerApp() {
         setLocating(false);
         const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         if (!inTuscany(p)) {
-          setError("You seem to be outside Tuscany. Search for a town or choose on the map.");
+          setError(t.errors.outsideTuscany);
           return;
         }
-        setDraftLabel("your current location");
+        setDraftLabel(t.position.currentLocation);
         setQuery("");
         onMapClick(p);
         // Geolocation is only town-accurate, so frame the neighbourhood around it.
@@ -324,15 +333,11 @@ export default function DinnerApp() {
         setLocating(false);
         const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
         if (err.code === err.PERMISSION_DENIED) {
-          setError(
-            isIOS
-              ? "Location access is blocked. On iPhone: Settings → Privacy & Security → Location Services → turn it on, then allow your browser (Safari Websites / Chrome) “While Using”. Or just search for your town below."
-              : "Location access is blocked. Allow location for this site in your browser settings, or search for your town below.",
-          );
+          setError(isIOS ? t.errors.locationBlockedIOS : t.errors.locationBlocked);
         } else if (err.code === err.TIMEOUT) {
-          setError("Getting your location took too long. Try again, or search for your town below.");
+          setError(t.errors.locationTimeout);
         } else {
-          setError("Your location isn't available right now. Search for your town or choose on the map.");
+          setError(t.errors.locationUnavailable);
         }
       },
       { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
@@ -356,7 +361,7 @@ export default function DinnerApp() {
           viewbox: `${b.west},${b.north},${b.east},${b.south}`,
           bounded: "1",
           limit: "5",
-          "accept-language": "it,en",
+          "accept-language": locale === "it" ? "it,en" : "en,it",
         });
       const res = await fetch(url);
       if (!res.ok) throw new Error();
@@ -373,7 +378,7 @@ export default function DinnerApp() {
           .filter((r) => inTuscany(r)),
       );
     } catch {
-      setError("Search is unavailable right now. Choose on the map instead.");
+      setError(t.errors.searchUnavailable);
     } finally {
       setSearching(false);
     }
@@ -395,8 +400,8 @@ export default function DinnerApp() {
     const name = nameInput.trim();
     const src = draft ?? (me.lat != null && me.lng != null ? { lat: me.lat, lng: me.lng } : null);
     const pos = src ? { lat: src.lat, lng: src.lng } : null;
-    if (!name) { setError("Enter your name first"); return; }
-    if (!pos) { setError("Search for your town, use your location, or choose on the map"); return; }
+    if (!name) { setError(t.errors.nameFirst); return; }
+    if (!pos) { setError(t.errors.positionFirst); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/groups/${groupId}/participants/${me.id}`, {
@@ -404,7 +409,10 @@ export default function DinnerApp() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ name, ...pos }),
       });
-      if (!res.ok) throw new Error((await res.json()).error ?? res.statusText);
+      if (!res.ok) {
+        const body = (await res.json()) as { error?: string; code?: ServerErrorCode };
+        throw new Error((body.code && t.errors.server[body.code]) || body.error || res.statusText);
+      }
       const updated: Me = { id: me.id, name, ...pos };
       setMe(updated);
       storage.set(`dinner:${groupId}:me`, JSON.stringify(updated));
@@ -416,7 +424,7 @@ export default function DinnerApp() {
       // With the new position in, step back to the whole group.
       focusMap("everyone");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not save");
+      setError(e instanceof Error ? e.message : t.errors.saveFailed);
     } finally {
       setSaving(false);
     }
@@ -435,7 +443,7 @@ export default function DinnerApp() {
   const share = async () => {
     const url = window.location.href;
     try {
-      if (navigator.share) await navigator.share({ title: "Dinner in Tuscany", url });
+      if (navigator.share) await navigator.share({ title: t.meta.shareTitle, url });
       else { await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     } catch { /* user cancelled */ }
   };
@@ -503,15 +511,15 @@ export default function DinnerApp() {
   // Each row leads with the number it was ranked by; the other one is secondary.
   const solo = participants.length < 2;
   const rankedS = (pl: DinnerPlace) => (strategy === "fair" ? pl.maxS : averageS(pl));
-  const metricCaption = solo ? "drive" : strategy === "fair" ? "longest drive" : "average drive";
+  const metricCaption = solo ? t.places.captionSolo : strategy === "fair" ? t.places.captionFair : t.places.captionTotal;
   const placeTimes = (pl: DinnerPlace) => `${formatDuration(rankedS(pl))} ${metricCaption}`;
   const secondaryTimes = (pl: DinnerPlace) => {
     if (solo || pl.legs.length === 0) return null;
     const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
-    const who = longest.participantId === me?.id ? "You" : nameOf(longest.participantId);
+    const who = longest.participantId === me?.id ? null : nameOf(longest.participantId);
     return strategy === "fair"
-      ? `${who === "You" ? "You drive" : `${who} drives`} longest · average ${formatDuration(averageS(pl))}`
-      : `Longest: ${who}, ${formatDuration(pl.maxS)}`;
+      ? t.places.fairSecondary(who, formatDuration(averageS(pl)))
+      : t.places.totalSecondary(who, formatDuration(pl.maxS));
   };
   // Below #1, show how much longer each place is, so near-ties read as ties.
   const bestMin = dinner?.places[0] ? minutes(rankedS(dinner.places[0])) : 0;
@@ -519,8 +527,8 @@ export default function DinnerApp() {
     if (i === 0) return { value: formatDuration(rankedS(pl)), caption: metricCaption, spoken: "" };
     const delta = minutes(rankedS(pl)) - bestMin;
     return delta <= 0
-      ? { value: "Same", caption: null, spoken: " as number 1" }
-      : { value: `+${formatDuration(delta * 60)}`, caption: null, spoken: " longer than number 1" };
+      ? { value: t.places.same, caption: null, spoken: t.places.sameSpoken }
+      : { value: `+${formatDuration(delta * 60)}`, caption: null, spoken: t.places.longerSpoken };
   };
   const rankBadge = (i: number, on: boolean) => (
     <span className={on ? "rank-badge rank-badge--on" : "rank-badge"}>{i + 1}</span>
@@ -529,25 +537,25 @@ export default function DinnerApp() {
   const peopleCard = (
     <section className="card card--people">
       <h2 className="section-heading">
-        <span>Who’s coming</span>
+        <span>{t.people.heading}</span>
         {data && (
           <span className="count-chip" role="status" aria-atomic="true">
             <span aria-hidden="true">{participants.length}</span>
-            <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
+            <span className="sr-only">{t.people.count(participants.length)}</span>
           </span>
         )}
       </h2>
       {!data ? (
         // Until the server answers, an empty list would claim nobody is coming.
-        !groupError && <p className="muted small" role="status">Loading the group…</p>
+        !groupError && <p className="muted small" role="status">{t.people.loading}</p>
       ) : participants.length === 0 ? (
-        <p className="muted small">Nobody yet. Be the first!</p>
+        <p className="muted small">{t.people.empty}</p>
       ) : (
         <ul className="people">
           {participants.map((p) => {
             const leg = selected?.legs.find((l) => l.participantId === p.id);
             const meta = [
-              p.id === me?.id ? "You" : null,
+              p.id === me?.id ? t.common.you : null,
               leg ? `${formatDuration(leg.durationS)} · ${(leg.distanceM / 1000).toFixed(0)} km` : null,
             ].filter(Boolean).join(" · ");
             return (
@@ -567,35 +575,35 @@ export default function DinnerApp() {
 
   const placesCard = (
     <section className="card card--places">
-      <h2>Where to eat</h2>
+      <h2>{t.places.heading}</h2>
       {/* With one person both rankings are the same, so there is nothing to choose. */}
       {Boolean(dinner?.places.length) && !solo && (
         <>
           <fieldset className="segmented" aria-describedby="strategy-description">
-            <legend className="sr-only">Rank places by</legend>
+            <legend className="sr-only">{t.places.rankBy}</legend>
             <label>
               <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
-              Least driving
+              {t.places.total}
             </label>
             <label>
               <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
-              Fairest
+              {t.places.fair}
             </label>
           </fieldset>
           <p className="muted small" id="strategy-description">
-            {strategy === "total" ? "Ranked by average drive, by car." : "Ranked by the longest drive, by car."}
+            {strategy === "total" ? t.places.totalDescription : t.places.fairDescription}
           </p>
         </>
       )}
       {dinner?.routing === "estimate" && (
-        <p className="muted small inline-meta"><WarningCircleIcon />The route service is busy, so these times are estimates.</p>
+        <p className="muted small inline-meta"><WarningCircleIcon />{t.places.estimate}</p>
       )}
 
       <div role="status">
         {dinnerState === "loading" && dinner && (
           <div className="loading-state loading-state--refreshing">
             <LoaderCircle className="app-icon spinner" aria-hidden="true" />
-            <p className="loading-state__text">Updating drive times…</p>
+            <p className="loading-state__text">{t.places.refreshing}</p>
           </div>
         )}
       </div>
@@ -603,27 +611,27 @@ export default function DinnerApp() {
         // The group is still loading; "Who's coming" already says so.
         null
       ) : participants.length === 0 ? (
-        <p className="muted small">Save your position to see places for dinner.</p>
+        <p className="muted small">{t.places.savePositionFirst}</p>
       ) : dinnerState === "loading" && !dinner ? (
         <div className="loading-state" role="status">
           <LoaderCircle className="app-icon spinner" aria-hidden="true" />
-          <p className="loading-state__text">Finding places to eat…</p>
+          <p className="loading-state__text">{t.places.finding}</p>
         </div>
       ) : dinnerState === "error" ? (
         <div className="availability-state" role="alert">
           <div className="availability-state__heading">
             <WarningCircleIcon />
-            <h3 className="availability-state__title">Places are unavailable</h3>
+            <h3 className="availability-state__title">{t.places.unavailableTitle}</h3>
           </div>
           <p className="muted small availability-state__description">
-            We couldn’t load dinner suggestions. Your group and saved positions are still here.
+            {t.places.unavailableDescription}
           </p>
           <button className="btn ghost availability-state__retry" onClick={() => setRetry((n) => n + 1)}>
-            <ArrowClockwiseIcon />Try again
+            <ArrowClockwiseIcon />{t.places.tryAgain}
           </button>
         </div>
       ) : dinner && dinner.places.length === 0 ? (
-        <p className="muted small">No restaurants or bars found in the area on OpenStreetMap.</p>
+        <p className="muted small">{t.places.none}</p>
       ) : (
         <ol className="towns">
           {dinner?.places.map((pl, i) => {
@@ -641,7 +649,7 @@ export default function DinnerApp() {
                   {rankBadge(i, on)}
                   <span className="town__text">
                     <span className="town-name">{pl.name}</span>
-                    <span className="muted small">{placeDescription(pl)}</span>
+                    <span className="muted small">{placeDescription(pl, t)}</span>
                     {secondary && <span className="muted small">{secondary}</span>}
                   </span>
                   <span className="town-metric">
@@ -653,7 +661,7 @@ export default function DinnerApp() {
                 {on && (
                   <div className="town__actions">
                     <a className="btn primary" href={directionsUrl(pl)} target="_blank" rel="noreferrer">
-                      <NavigationArrowIcon />Directions
+                      <NavigationArrowIcon />{t.common.directions}
                     </a>
                     <a
                       className="btn secondary"
@@ -661,7 +669,7 @@ export default function DinnerApp() {
                       target="_blank"
                       rel="noreferrer"
                     >
-                      Reviews & hours<ArrowSquareOutIcon />
+                      {t.places.reviews}<ArrowSquareOutIcon />
                     </a>
                   </div>
                 )}
@@ -676,7 +684,7 @@ export default function DinnerApp() {
   return (
     <IconContext.Provider value={{ className: "app-icon", weight: "regular", "aria-hidden": true }}>
     <div className="layout" ref={layout}>
-      <main className={picking ? "map map--picking" : "map"} aria-label="Group map" ref={mapArea}>
+      <main className={picking ? "map map--picking" : "map"} aria-label={t.map.label} ref={mapArea}>
         <DinnerMap {...mapProps} />
       </main>
       <div className="sheet" ref={sheet} onScroll={onSheetScroll}>
@@ -689,65 +697,65 @@ export default function DinnerApp() {
         }}>
         <div className="sheet__top" ref={sheetTop}>
           <button className="sheet__grabber"
-            aria-label={detent === "full" ? "Show the map" : "Show more"}
+            aria-label={detent === "full" ? t.sheet.showMap : t.sheet.showMore}
             onClick={() => goTo(detent === "low" ? "middle" : detent === "middle" ? "full" : "low")}>
             <span className="sheet__handle" />
           </button>
           <header className="brand">
-            <div className="brand__eyebrow">GOOD FOOD. GREAT COMPANY.</div>
+            <div className="brand__eyebrow">{t.brand.eyebrow}</div>
             <div className="row between brand__heading">
               <h1>Cena in<br />Toscana<span className="brand__sticker" aria-hidden="true"><ForkKnifeIcon /></span></h1>
-              <button className="btn ghost share-button" onClick={share} aria-label={copied ? "Link copied" : "Share link"}>
+              <button className="btn ghost share-button" onClick={share} aria-label={copied ? t.brand.copied : t.brand.share}>
                 {copied ? <CheckIcon /> : <Share className="app-icon" aria-hidden="true" />}
-                <span className="share-button__label">{copied ? "Link copied" : "Share link"}</span>
+                <span className="share-button__label">{copied ? t.brand.copied : t.brand.share}</span>
               </button>
             </div>
             {!(joined && (selected || dinnerState !== "idle")) && (
-              <p>Find a place for dinner that works for everyone.</p>
+              <p>{t.brand.tagline}</p>
             )}
           </header>
           {picking ? (
             <div className="picking-bar">
               <p className="small" role="status">
-                {draft ? "Pin placed. Tap the map again to move it." : "Tap the map to place your pin."}
+                {draft ? t.picking.placed : t.picking.prompt}
               </p>
               {error && <p className="error" role="alert">{error}</p>}
               <div className="row gap">
-                <button className="btn primary" onClick={() => endPicking(true)}><CheckIcon />Done</button>
-                <button className="btn quiet" onClick={() => endPicking(false)}>Cancel</button>
+                <button className="btn primary" onClick={() => endPicking(true)}><CheckIcon />{t.picking.done}</button>
+                <button className="btn quiet" onClick={() => endPicking(false)}>{t.common.cancel}</button>
               </div>
             </div>
           ) : joined && selected ? (
             <div className="sheet-summary sheet-summary--place">
               {/* Out here there's no list to be number 1 of: the best place wears a crown instead. */}
               {selectedIdx === 0 ? (
-                <span className="rank-badge rank-badge--on" role="img" aria-label="Top pick"><CrownIcon weight="fill" /></span>
+                <span className="rank-badge rank-badge--on" role="img" aria-label={t.sheet.topPick}><CrownIcon weight="fill" /></span>
               ) : rankBadge(selectedIdx, true)}
               <div className="sheet-summary__text">
                 <span className="town-name">{selected.name}</span>
                 <span className="muted small">{placeTimes(selected)}</span>
               </div>
               <a className="btn primary" href={directionsUrl(selected)} target="_blank" rel="noreferrer">
-                <NavigationArrowIcon />Directions
+                <NavigationArrowIcon />{t.common.directions}
               </a>
             </div>
           ) : joined && dinnerState === "loading" ? (
             <p className="sheet-summary muted small inline-meta">
-              <LoaderCircle className="app-icon spinner" aria-hidden="true" />Finding places to eat…
+              <LoaderCircle className="app-icon spinner" aria-hidden="true" />{t.places.finding}
             </p>
           ) : joined && dinnerState === "error" ? (
-            <p className="sheet-summary muted small inline-meta"><WarningCircleIcon />Places are unavailable right now.</p>
+            <p className="sheet-summary muted small inline-meta"><WarningCircleIcon />{t.sheet.placesUnavailable}</p>
           ) : null}
         </div>
 
         <section className="card card--position">
-          <h2>{joined ? "Your position" : "Add yourself"}</h2>
+          <h2>{joined ? t.position.headingJoined : t.position.headingNew}</h2>
           <label className="field">
-            <span>Your name</span>
+            <span>{t.position.name}</span>
             <input
               value={nameInput}
               maxLength={40}
-              placeholder="e.g. Giulia"
+              placeholder={t.position.namePlaceholder}
               onChange={(e) => setNameInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && save()}
             />
@@ -773,7 +781,7 @@ export default function DinnerApp() {
               else options[i - 1].focus();
             }
           }}>
-            <label htmlFor="location-search">Your town or address</label>
+            <label htmlFor="location-search">{t.position.location}</label>
             <form
               className="row gap location-search"
               onSubmit={(e) => { e.preventDefault(); search(); }}
@@ -784,14 +792,14 @@ export default function DinnerApp() {
                 type="search"
                 aria-controls={results ? "location-results" : undefined}
                 value={query}
-                placeholder="e.g. Empoli"
+                placeholder={t.position.locationPlaceholder}
                 onChange={(e) => setQuery(e.target.value)}
               />
               <button
                 className="btn ghost"
                 type="submit"
-                aria-label="Search locations"
-                title="Search locations"
+                aria-label={t.position.search}
+                title={t.position.search}
                 aria-busy={searching}
                 disabled={searching || query.trim().length < 2}
               >
@@ -801,10 +809,10 @@ export default function DinnerApp() {
               </button>
             </form>
             {results && (
-              <ul className="results" id="location-results" aria-label="Location results">
+              <ul className="results" id="location-results" aria-label={t.position.results}>
                 {results.length === 0 && (
                   <li className="results__empty muted small" role="status">
-                    No places found in Tuscany. Try a nearby town.
+                    {t.position.noResults}
                   </li>
                 )}
                 {results.map((r) => {
@@ -825,25 +833,25 @@ export default function DinnerApp() {
           </div>
           <div className="location-options">
             <button className="btn ghost" onClick={useMyLocation} disabled={locating}>
-              <CrosshairIcon />{locating ? "Locating…" : "Use my location"}
+              <CrosshairIcon />{locating ? t.position.locating : t.position.useMyLocation}
             </button>
             <button className="btn ghost" onClick={startPicking} aria-pressed={picking}>
-              <MapTrifoldIcon />Choose on map
+              <MapTrifoldIcon />{t.position.chooseOnMap}
             </button>
           </div>
           <p className="muted small position-status" role="status" ref={positionStatus} tabIndex={-1}>
             {draft
-              ? `Selected: ${draftLabel ?? "your map pin"}. Save to share with the group.`
+              ? t.position.selected(draftLabel ?? t.position.mapPin)
               : joined
-                ? hasChanges ? "You have unsaved changes." : "Your position is saved. Choose a new location to move it."
-                : "A nearby town is enough — no exact address needed."}
+                ? hasChanges ? t.position.unsaved : t.position.saved
+                : t.position.hint}
           </p>
           {(!joined || hasChanges || saving) && (
             <div className={joined ? "position-actions position-actions--editing" : "position-actions"}>
               <button className={joined ? "btn ghost" : "btn primary"} onClick={save} disabled={saving}>
-                {saving ? "Saving…" : joined ? "Save" : "Save position"}
+                {saving ? t.position.saving : joined ? t.position.save : t.position.savePosition}
               </button>
-              {joined && <button className="btn quiet" onClick={cancelChanges} disabled={saving}>Cancel</button>}
+              {joined && <button className="btn quiet" onClick={cancelChanges} disabled={saving}>{t.common.cancel}</button>}
             </div>
           )}
           {error && !picking && <p className="error" role="alert">{error}</p>}
@@ -854,12 +862,21 @@ export default function DinnerApp() {
 
         {groupError && <p className="error" role="alert">{groupError}</p>}
         <details className="group-options">
-          <summary className="group-options__toggle">Group options<CaretDownIcon /></summary>
+          <summary className="group-options__toggle">{t.group.options}<CaretDownIcon /></summary>
           <div className="row between group-options__content">
-            <span className="muted small">Group <code>{groupId ?? "…"}</code></span>
-            <button className="btn ghost" onClick={newGroup}><PlusIcon />New group</button>
+            <span className="muted small">{t.group.label} <code>{groupId ?? "…"}</code></span>
+            <button className="btn ghost" onClick={newGroup}><PlusIcon />{t.group.new}</button>
           </div>
-          {joined && <button className="btn quiet danger-text group-options__leave" onClick={leave}>Leave group</button>}
+          <fieldset className="segmented group-options__language">
+            <legend className="group-options__legend">{t.language.label}</legend>
+            {LOCALES.map((l) => (
+              <label key={l} lang={l}>
+                <input type="radio" name="locale" value={l} checked={locale === l} onChange={() => setLocale(l)} />
+                {LOCALE_NAMES[l]}
+              </label>
+            ))}
+          </fieldset>
+          {joined && <button className="btn quiet danger-text group-options__leave" onClick={leave}>{t.group.leave}</button>}
         </details>
       </aside>
       </div>
