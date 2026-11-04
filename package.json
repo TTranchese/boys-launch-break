@@ -11,7 +11,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "map:prepare": "node scripts/prepare-map.mjs"
+    "map:prepare": "node scripts/prepare-map.mjs",
+    "places:update": "node scripts/update-places.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",

@@ -44,10 +44,7 @@ export async function computeDinner(
 
   return cached(`dinner|${strategy}|${peopleKey(people)}`, async () => {
     const seeds = searchSeeds(people, strategy);
-    let candidates = await cached(`places|${seeds.map((s) => `${s.lat.toFixed(3)},${s.lng.toFixed(3)}`).join(";")}`, () =>
-      findPlaces(seeds),
-    );
-    candidates = candidates.slice(0, Math.max(0, OSRM_MAX_COORDS - people.length));
+    const candidates = findPlaces(seeds).slice(0, Math.max(0, OSRM_MAX_COORDS - people.length));
 
     let matrix: (Leg | null)[][];
     let routing: DinnerResult["routing"] = "road";

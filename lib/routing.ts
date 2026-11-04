@@ -1,5 +1,6 @@
 import { haversineKm, type Point } from "./geo";
-import { USER_AGENT } from "./places";
+
+export const USER_AGENT = "CenaInToscana/1.0 (+https://github.com/TTranchese/BuberDinner)";
 
 // Public OSRM demo server: free, no key, car profile. Fine for light use.
 const OSRM_URL = process.env.OSRM_URL ?? "https://router.project-osrm.org";

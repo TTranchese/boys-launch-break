@@ -17,8 +17,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ groupId: string
     return NextResponse.json(result);
   } catch {
     return NextResponse.json(
-      { error: "Couldn't load restaurants from OpenStreetMap right now. Please try again in a minute." },
-      { status: 502 },
+      { error: "Couldn't rank places to eat right now. Please try again in a minute." },
+      { status: 500 },
     );
   }
 }

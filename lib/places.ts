@@ -1,4 +1,5 @@
 import { haversineKm, type Point } from "./geo";
+import snapshot from "./places-tuscany.json";
 
 export type PlaceKind = "restaurant" | "bar" | "pub";
 
@@ -12,73 +13,45 @@ export type Place = {
   town?: string;
 };
 
-const OVERPASS_URLS = (
-  process.env.OVERPASS_URL ??
-  "https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter"
-).split(",");
+/**
+ * Restaurants, bars and pubs across Tuscany, from a bundled OpenStreetMap
+ * snapshot (`npm run places:update` refreshes it). Searching it in memory
+ * means a dinner search never waits on, or fails because of, a public
+ * Overpass server.
+ */
+type Row = [id: string, name: string, kind: number, lat: number, lng: number, cuisine?: string | 0, town?: string];
 
-export const USER_AGENT = "CenaInToscana/1.0 (+https://github.com/TTranchese/BuberDinner)";
+const KINDS = snapshot.kinds as PlaceKind[];
+const PLACES: Place[] = (snapshot.places as Row[]).map(([id, name, kind, lat, lng, cuisine, town]) => ({
+  id,
+  name,
+  kind: KINDS[kind] ?? "restaurant",
+  lat,
+  lng,
+  ...(cuisine ? { cuisine } : {}),
+  ...(town ? { town } : {}),
+}));
 
-type OverpassElement = {
-  type: string;
-  id: number;
-  lat?: number;
-  lon?: number;
-  center?: { lat: number; lon: number };
-  tags?: Record<string, string>;
-};
+/** When the OpenStreetMap data in the snapshot was taken. */
+export const PLACES_AS_OF: string | undefined = snapshot.osmBase;
+
+// Cheap pre-filter before the exact distance: degrees of latitude per km.
+const DEG_LAT_PER_KM = 1 / 111.2;
 
 /**
- * Restaurants, bars and pubs (from OpenStreetMap) around each seed point.
- * Keeps the `perSeed` nearest ones for every seed so candidates are spread
- * over all the areas instead of piling up in one busy town.
+ * Places around each seed point. Keeps the `perSeed` nearest ones within
+ * `radiusM` of every seed so candidates are spread over all the areas instead
+ * of piling up in one busy town.
  */
-export async function findPlaces(seeds: Point[], radiusM = 4000, perSeed = 10): Promise<Place[]> {
-  if (seeds.length === 0) return [];
-  const around = seeds
-    .map((s) => `nwr["amenity"~"^(restaurant|bar|pub)$"]["name"](around:${radiusM},${s.lat.toFixed(5)},${s.lng.toFixed(5)});`)
-    .join("\n");
-  const query = `[out:json][timeout:40];(\n${around}\n);out center tags 1500;`;
-
-  // Public Overpass servers are often slow or down: ask all of them at once and
-  // take the first answer, within the route's 60 s budget.
-  const ask = async (url: string) => {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/x-www-form-urlencoded", "user-agent": USER_AGENT },
-      body: new URLSearchParams({ data: query }),
-      signal: AbortSignal.timeout(45000),
-    });
-    if (!res.ok) throw new Error(`Overpass ${res.status}`);
-    return ((await res.json()) as { elements: OverpassElement[] }).elements;
-  };
-  const elements = await Promise.any(OVERPASS_URLS.map(ask)).catch(() => {
-    throw new Error("Overpass unavailable");
-  });
-
-  const all = new Map<string, Place>();
-  for (const e of elements) {
-    const lat = e.lat ?? e.center?.lat;
-    const lng = e.lon ?? e.center?.lon;
-    const t = e.tags ?? {};
-    if (lat == null || lng == null || !t.name) continue;
-    if (t.disused === "yes" || t["disused:amenity"]) continue;
-    all.set(`${e.type}/${e.id}`, {
-      id: `${e.type}/${e.id}`,
-      name: t.name,
-      kind: (t.amenity as PlaceKind) ?? "restaurant",
-      lat,
-      lng,
-      cuisine: t.cuisine?.replace(/;/g, ", ").replace(/_/g, " "),
-      town: t["addr:city"] ?? t["addr:town"] ?? t["addr:village"],
-    });
-  }
-
-  const list = [...all.values()];
+export function findPlaces(seeds: Point[], radiusM = 4000, perSeed = 10): Place[] {
+  const radiusKm = radiusM / 1000;
   const picked = new Map<string, Place>();
   for (const seed of seeds) {
-    list
+    const dLat = radiusKm * DEG_LAT_PER_KM;
+    const dLng = dLat / Math.cos((seed.lat * Math.PI) / 180);
+    PLACES.filter((p) => Math.abs(p.lat - seed.lat) <= dLat && Math.abs(p.lng - seed.lng) <= dLng)
       .map((p) => ({ p, d: haversineKm(seed, p) }))
+      .filter(({ d }) => d <= radiusKm)
       .sort((a, b) => a.d - b.d)
       .slice(0, perSeed)
       .forEach(({ p }) => picked.set(p.id, p));
