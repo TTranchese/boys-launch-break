@@ -17,19 +17,53 @@ Pin where everyone is in Tuscany, share the link, and find the best place to hav
 
 1. Straight-line optima (geometric median and minimax centre) plus the best-scoring Tuscan towns are
    used as search areas.
-2. Restaurants/bars/pubs around each area are fetched from OpenStreetMap (Overpass API).
+2. Restaurants/bars/pubs around each area are looked up in a bundled OpenStreetMap snapshot
+   (`lib/places-tuscany.json`, ~13.6k places) — in memory, with no network call.
 3. Driving times from everyone to every candidate come from one OSRM table request (car profile),
    and candidates are ranked by total or longest drive.
 
 Results are cached in memory for 15 minutes so friends polling the same group don't hit the free
 services repeatedly. If the router is down, times fall back to an estimate (shown with a warning).
-`OSRM_URL` and `OVERPASS_URL` env vars can point to other (e.g. self-hosted) instances.
+`OSRM_URL` can point to another (e.g. self-hosted) router.
+
+### Refreshing the places snapshot
+
+Public Overpass servers are too slow and unreliable to query on every search (a single query
+often takes close to a minute or times out), so places are fetched once and committed instead.
+Refresh them every few months:
+
+```bash
+npm run places:update
+```
+
+The script tries each Overpass server in turn (override with `OVERPASS_URL`, comma separated)
+and keeps the old file if none answers or the result looks broken (over 20% fewer places; pass
+`--force` to accept that). It runs separately from `dev` and `build`, so builds never depend on
+Overpass. Data © OpenStreetMap contributors, ODbL.
+
+## Design system
+
+The app's colourful, Toca Boca inspired design system from `DESIGN.md` is documented in
+[the design-system master](design-system/cena-in-toscana/MASTER.md).
+With the dev server running, open
+[the interactive component preview](http://localhost:3000/design-system/index.html).
+It is isolated from the current app and uses fictional example data.
+
+The app and preview share generated tokens. Styles rebuild automatically before
+`npm run dev` and `npm run build`. After editing design-system sources in an
+already-running dev session, regenerate them with:
+
+```bash
+npm run design-system:build
+npm run design-system:check # generated-file drift + contrast checks (Python 3)
+```
 
 ## Stack
 
 - Next.js (App Router) + React, deployed on Vercel
 - Leaflet / react-leaflet with OpenStreetMap tiles
-- Free, keyless services: OSRM (driving times & routes), Overpass (restaurants), Nominatim (search)
+- Free, keyless services: OSRM (driving times & routes), Nominatim (search); restaurants from a
+  bundled OpenStreetMap snapshot (fetched with Overpass by `npm run places:update`)
 - **In-memory SQL database**: [AlaSQL](https://github.com/AlaSQL/alasql) (`lib/db.ts`)
 
 ### About the in-memory database on Vercel
@@ -61,3 +95,10 @@ npm run dev   # http://localhost:3000
 
 Import this repo at https://vercel.com/new (framework preset: Next.js, no env vars needed),
 or run `npx vercel` from the project folder.
+
+The map uses a custom vector style from the shared palette, rendered with
+MapLibre inside Leaflet using OpenFreeMap tiles. Map navigation is unrestricted;
+Tuscany is the initial view. “Show everyone” recenters on participants and the
+selected venue. Saving positions and searching for dinner remain Tuscany scoped.
+The MapLibre worker is self-hosted and prepared automatically before dev/build
+(`npm run map:prepare`); the vector basemap requires WebGL2.

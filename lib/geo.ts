@@ -3,7 +3,7 @@ import { TOWNS } from "./towns";
 export type Point = { lat: number; lng: number };
 export type Strategy = "total" | "fair";
 
-// Rough bounding box of Tuscany, used to validate input and constrain the map.
+// Rough bounding box of Tuscany, used to validate input and set the initial map view.
 export const TUSCANY_BOUNDS = {
   south: 42.2,
   west: 9.6,

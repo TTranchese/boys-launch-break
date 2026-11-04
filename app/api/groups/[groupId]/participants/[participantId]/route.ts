@@ -23,14 +23,14 @@ export async function PUT(req: Request, ctx: Ctx) {
   const name = typeof body.name === "string" ? body.name.trim().slice(0, 40) : "";
   const lat = Number(body.lat);
   const lng = Number(body.lng);
-  if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+  if (!name) return NextResponse.json({ error: "Name is required", code: "name_required" }, { status: 400 });
   if (!Number.isFinite(lat) || !Number.isFinite(lng) || !inTuscany({ lat, lng })) {
-    return NextResponse.json({ error: "Position must be inside Tuscany" }, { status: 400 });
+    return NextResponse.json({ error: "Position must be inside Tuscany", code: "outside_tuscany" }, { status: 400 });
   }
 
   const current = listParticipants(groupId);
   if (!current.some((p) => p.id === participantId) && current.length >= MAX_PARTICIPANTS) {
-    return NextResponse.json({ error: "This group is full" }, { status: 409 });
+    return NextResponse.json({ error: "This group is full", code: "group_full" }, { status: 409 });
   }
 
   const participant = upsertParticipant({ id: participantId, groupId, name, lat, lng });

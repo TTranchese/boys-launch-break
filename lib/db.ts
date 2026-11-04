@@ -43,14 +43,36 @@ function createDb(): Db {
 // Reuse across hot reloads in dev and across invocations of a warm instance.
 const db: Db = globalForDb.__dinnerDb ?? (globalForDb.__dinnerDb = createDb());
 
-function ensureGroup(groupId: string) {
+// Local development only: every new group starts with a few people scattered
+// across Tuscany so the map is never empty. Set MOCK_USERS=0 to opt out.
+const MOCK_USERS = [
+  { name: "Giulia", lat: 43.7711, lng: 11.2486 }, // Firenze
+  { name: "Marco", lat: 43.7160, lng: 10.3966 },  // Pisa
+  { name: "Chiara", lat: 43.3186, lng: 11.3306 }, // Siena
+  { name: "Luca", lat: 43.8430, lng: 10.5080 },   // Lucca
+  { name: "Elena", lat: 43.4640, lng: 11.8830 },  // Arezzo
+];
+const seedMockUsers =
+  process.env.NODE_ENV === "development" && process.env.MOCK_USERS !== "0";
+
+function ensureGroup(groupId: string): boolean {
   const rows = db.exec("SELECT id FROM groups WHERE id = ?", [groupId]) as unknown[];
-  if (rows.length === 0) {
-    db.exec("INSERT INTO groups VALUES (?, ?)", [groupId, Date.now()]);
-  }
+  if (rows.length > 0) return false;
+  db.exec("INSERT INTO groups VALUES (?, ?)", [groupId, Date.now()]);
+  return true;
+}
+
+function seedGroup(groupId: string) {
+  const now = Date.now();
+  MOCK_USERS.forEach((u, i) => {
+    db.exec("INSERT INTO participants VALUES (?, ?, ?, ?, ?, ?)", [
+      `mock-${i + 1}`, groupId, u.name, u.lat, u.lng, now + i,
+    ]);
+  });
 }
 
 export function listParticipants(groupId: string): Participant[] {
+  if (seedMockUsers && ensureGroup(groupId)) seedGroup(groupId);
   return db.exec(
     "SELECT * FROM participants WHERE groupId = ? ORDER BY updatedAt ASC",
     [groupId],
