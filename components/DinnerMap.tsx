@@ -2,11 +2,12 @@
 
 import L from "leaflet";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { LeafletContext, createLeafletContext, type LeafletContextInterface } from "@react-leaflet/core";
 import { Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
-import { CornersOutIcon, CarIcon } from "@phosphor-icons/react";
+import { CornersOutIcon, CarIcon, InfoIcon } from "@phosphor-icons/react";
 import { getVersion, setWorkerUrl } from "maplibre-gl";
-import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
+import { MaplibreGL } from "@maplibre/maplibre-gl-leaflet";
 import { createMapStyle } from "@/lib/map-style";
 import type { Participant } from "@/lib/db";
 import type { Point } from "@/lib/geo";
@@ -48,11 +49,44 @@ function MapRoot({ className, bounds, children, ...options }: L.MapOptions & {
   );
 }
 
+/** The parts of maplibre-gl-leaflet's layer that the guard below touches. */
+type GLLayer = {
+  _map: L.Map | null;
+  _glMap: { _actualCanvas: HTMLElement; once(type: string, fn: () => void): void; jumpTo(o: { center: L.LatLng; zoom: number }): void } | null;
+  _resizeContainer(): void;
+  _zoomEnd(): void;
+};
+const glZoomEnd = (MaplibreGL.prototype as unknown as GLLayer)._zoomEnd;
+
+/**
+ * maplibre-gl-leaflet finishes resizes and zooms a frame later without checking the layer
+ * is still on a map, so removing it in between (an effect rerun in dev, a hot reload while
+ * the sheet resizes the map) throws "reading 'getZoom'". Same work, plus that check.
+ */
+const BasemapLayer = MaplibreGL.extend({
+  _transitionEnd(this: GLLayer) {
+    L.Util.requestAnimFrame(() => {
+      const map = this._map, gl = this._glMap;
+      if (!map || !gl) return;
+      const zoom = map.getZoom();
+      const center = map.getCenter();
+      const offset = map.latLngToContainerPoint(map.getBounds().getNorthWest());
+      this._resizeContainer();
+      L.DomUtil.setTransform(gl._actualCanvas, offset, 1);
+      gl.once("moveend", () => this._zoomEnd());
+      gl.jumpTo({ center, zoom: zoom - 1 });
+    });
+  },
+  _zoomEnd(this: GLLayer) {
+    if (this._map && this._glMap) glZoomEnd.call(this);
+  },
+}) as unknown as typeof MaplibreGL; // Leaflet's extend() typing drops the constructor's options.
+
 function BrandedBasemap() {
   const map = useMap();
   useEffect(() => {
     setWorkerUrl(`/maplibre/worker.mjs?v=${getVersion()}`);
-    const layer = maplibreGL({
+    const layer = new BasemapLayer({
       style: createMapStyle(), attributionControl: false,
     });
     layer.addTo(map);
@@ -63,6 +97,50 @@ function BrandedBasemap() {
     };
   }, [map]);
   return null;
+}
+
+/** How long the credits stay open on phones before folding into their button. */
+const CREDITS_OPEN_MS = 5000;
+
+/**
+ * The map data's licences require the credits to stay on the map, but on a phone a full
+ * strip of them crowds the sheet. There they show on load, fold into an ⓘ button after a
+ * few seconds or once you drag the map, and open again on tap. Desktop keeps the strip.
+ */
+function MapCredits() {
+  const map = useMap();
+  const [open, setOpen] = useState(true);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const Credits = L.Control.extend({
+      onAdd: () => {
+        const el = L.DomUtil.create("div", "map-credits");
+        L.DomEvent.disableClickPropagation(el);
+        return el;
+      },
+    });
+    const control = new Credits({ position: "bottomright" }).addTo(map);
+    setHost(control.getContainer() ?? null);
+    const fold = () => setOpen(false);
+    const timer = window.setTimeout(fold, CREDITS_OPEN_MS);
+    map.on("dragstart", fold);
+    return () => {
+      window.clearTimeout(timer);
+      map.off("dragstart", fold);
+      control.remove();
+    };
+  }, [map]);
+  useEffect(() => {
+    map.getContainer().classList.toggle("map-credits--folded", !open);
+  }, [map, open]);
+  return host && createPortal(
+    <button className="map-credits__toggle" aria-expanded={open}
+      aria-label={open ? "Hide map credits" : "Show map credits"}
+      onClick={() => setOpen((o) => !o)}>
+      <span className="map-credits__dot"><InfoIcon weight="bold" /></span>
+    </button>,
+    host,
+  );
 }
 
 type Box = { south: number; west: number; north: number; east: number };
@@ -265,6 +343,7 @@ export default function DinnerMap({
       className="dinner-map"
     >
       <BrandedBasemap />
+      <MapCredits />
       <GroupFocus points={[...participants, ...(selected ? [selected] : []), ...(draft ? [draft] : [])]} />
       <ResizeMap />
       <ClickHandler onClick={onMapClick} />

@@ -34,6 +34,9 @@ a { color: var(--color-accent); }
     background: var(--color-subtle);
 }
 .map--picking .leaflet-container { cursor: crosshair; }
+/* The map runs a corner radius under the sheet so its rounded corners show map behind them;
+   lift Leaflet's bottom controls out of that strip so the attribution doesn't square them off. */
+.map .leaflet-bottom { bottom: var(--panel-radius); }
 .dinner-map { height: 100%; width: 100%; }
 .map-loading { display: grid; place-items: center; height: 100%; color: var(--color-muted); }
 .brand__heading { flex-wrap: nowrap; align-items: flex-start; gap: var(--space-3); }
@@ -243,6 +246,7 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
     font-variant-numeric: tabular-nums;
 }
 .rank-badge--on { background: var(--color-tangerine); }
+.rank-badge .app-icon { width: var(--space-4); height: var(--space-4); }
 .town__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3); }
 .town__actions .btn { flex: 1 1 auto; }
 
@@ -410,6 +414,8 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 .sheet-summary { display: flex; align-items: center; gap: var(--space-3); margin: 0; }
 .sheet-summary__text { display: grid; gap: var(--space-1); flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .sheet-summary > .btn { flex: none; }
+/* The chosen place in the drawer is the same object as the selected row in the list: same Sunshine card. */
+.sheet-summary--place { padding: var(--space-3); border-radius: var(--radius-control); background: var(--color-selected); }
 .picking-bar {
     display: grid;
     gap: var(--space-3);
@@ -421,12 +427,44 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 .picking-bar p { margin: 0; }
 
 /* #RESPONSIVE */
+/* Map credits: a strip on desktop; on phones and tablets a pill that folds into an ⓘ button. */
+.map-credits { display: none; }
+.map-credits__toggle {
+    display: grid;
+    place-items: center;
+    width: var(--map-control-size);
+    height: var(--map-control-size);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.map-credits__dot {
+    display: grid;
+    place-items: center;
+    width: var(--chip-min-size);
+    height: var(--chip-min-size);
+    border-radius: var(--radius-full);
+    background: var(--color-action);
+    color: var(--color-on-action);
+}
+.map-credits__toggle:focus-visible { outline: 0; }
+.map-credits__toggle:focus-visible .map-credits__dot { outline: var(--focus-width) solid var(--color-accent); outline-offset: var(--focus-offset); }
+@media (width < 1024px) {
+    /* The button stays in the corner; the credits open to its left. */
+    .map .leaflet-bottom.leaflet-right { display: flex; flex-direction: row-reverse; align-items: center; }
+    .map .leaflet-bottom.leaflet-right > .leaflet-control { margin: 0 var(--space-2) var(--space-2) 0; }
+    .map-credits { display: block; }
+    .map .leaflet-control-attribution { min-width: 0; padding: var(--space-1) var(--space-2); border-radius: var(--radius-small); }
+    .map-credits--folded .leaflet-control-attribution { display: none; }
+}
 @media (width >= 1024px) {
     .layout { display: grid; grid-template-columns: var(--layout-planning-width) minmax(0, 1fr); align-items: start; }
     .sheet { display: contents; }
     .sheet__track, .sheet__grabber, .sheet-summary { display: none; }
     .panel { --panel-padding: var(--panel-padding-comfortable); grid-column: 1; grid-row: 1;  }
     .sheet .panel { min-height: 100dvh; padding: var(--space-4); background: none; border-radius: 0; box-shadow: none; }
+    .map .leaflet-bottom { bottom: 0; }
     .map { grid-column: 2; grid-row: 1; position: sticky; inset: auto; top: var(--space-4); height: calc(100dvh - var(--space-8)); margin: var(--space-4) var(--space-4) var(--space-4) 0; border-radius: var(--panel-radius); overflow: hidden; }
 
     .brand__heading h1 { font-size: var(--text-title); }

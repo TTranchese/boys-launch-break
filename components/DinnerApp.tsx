@@ -6,7 +6,7 @@ import {
   IconContext, CheckIcon, CrosshairIcon, MapTrifoldIcon,
   NavigationArrowIcon, WarningCircleIcon, ForkKnifeIcon,
   ArrowSquareOutIcon, ArrowClockwiseIcon,
-  PlusIcon, CaretDownIcon,
+  PlusIcon, CaretDownIcon, CrownIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Point, Strategy } from "@/lib/geo";
@@ -718,9 +718,13 @@ export default function DinnerApp() {
               </div>
             </div>
           ) : joined && selected ? (
-            <div className="sheet-summary">
+            <div className="sheet-summary sheet-summary--place">
+              {/* Out here there's no list to be number 1 of: the best place wears a crown instead. */}
+              {selectedIdx === 0 ? (
+                <span className="rank-badge rank-badge--on" role="img" aria-label="Top pick"><CrownIcon weight="fill" /></span>
+              ) : rankBadge(selectedIdx, true)}
               <div className="sheet-summary__text">
-                <span className="town-name">{rankBadge(selectedIdx, true)}{selected.name}</span>
+                <span className="town-name">{selected.name}</span>
                 <span className="muted small">{placeTimes(selected)}</span>
               </div>
               <a className="btn primary" href={directionsUrl(selected)} target="_blank" rel="noreferrer">
