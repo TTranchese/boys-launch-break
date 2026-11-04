@@ -74,6 +74,15 @@ function mapMotion() {
   };
 }
 
+/**
+ * Leaflet's flyTo only re-aligns tile layers on zoom events, so a flight that ends at the
+ * current zoom leaves the tiles offset from the vector overlays. Pan for those instead.
+ */
+function flyTo(map: L.Map, center: L.LatLng, zoom: number) {
+  if (zoom === map.getZoom()) map.setView(center, zoom, mapMotion());
+  else map.flyTo(center, zoom, mapMotion());
+}
+
 function ClickHandler({ onClick }: { onClick: (p: Point) => void }) {
   useMapEvents({ click: (e) => onClick({ lat: e.latlng.lat, lng: e.latlng.lng }) });
   return null;
@@ -95,7 +104,7 @@ function FlyTo({ point }: { point: Point | null }) {
   const map = useMap();
   useEffect(() => {
     if (point && !map.getBounds().pad(-0.1).contains([point.lat, point.lng])) {
-      map.flyTo([point.lat, point.lng], Math.max(map.getZoom(), 11), mapMotion());
+      flyTo(map, L.latLng(point.lat, point.lng), Math.max(map.getZoom(), 11));
     }
   }, [point, map]);
   return null;
@@ -106,8 +115,8 @@ function FitSelection({ points, selectedId }: { points: Point[]; selectedId: str
   const map = useMap();
   useEffect(() => {
     if (!selectedId || points.length === 0) return;
-    const b = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]));
-    map.flyToBounds(b.pad(0.15), { ...mapMotion(), maxZoom: 13 });
+    const b = L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number])).pad(0.15);
+    flyTo(map, b.getCenter(), Math.min(map.getBoundsZoom(b), 13));
   }, [selectedId]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
