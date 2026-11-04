@@ -476,9 +476,9 @@ export default function DinnerApp() {
             <div className="brand__eyebrow">GOOD FOOD. GREAT COMPANY.</div>
             <div className="row between brand__heading">
               <h1>Cena in<br />Toscana<span className="brand__sticker" aria-hidden="true"><ForkKnifeIcon /></span></h1>
-              <button className="btn ghost share-button" onClick={share} aria-label={copied ? "Link copied!" : "Share link"}>
+              <button className="btn ghost share-button" onClick={share} aria-label={copied ? "Link copied" : "Share link"}>
                 {copied ? <CheckIcon /> : <Share className="app-icon" aria-hidden="true" />}
-                <span className="share-button__label">{copied ? "Link copied!" : "Share link"}</span>
+                <span className="share-button__label">{copied ? "Link copied" : "Share link"}</span>
               </button>
             </div>
             {!(joined && (selected || dinnerState !== "idle")) && (
@@ -590,7 +590,7 @@ export default function DinnerApp() {
           </div>
           <div className="location-options">
             <button className="btn ghost" onClick={useMyLocation} disabled={locating}>
-              <CrosshairIcon />{locating ? "Locating…" : "My location"}
+              <CrosshairIcon />{locating ? "Locating…" : "Use my location"}
             </button>
             <button className="btn ghost" onClick={startPicking} aria-pressed={picking}>
               <MapTrifoldIcon />Choose on map
@@ -606,7 +606,7 @@ export default function DinnerApp() {
           {(!joined || hasChanges || saving) && (
             <div className={joined ? "position-actions position-actions--editing" : "position-actions"}>
               <button className={joined ? "btn ghost" : "btn primary"} onClick={save} disabled={saving}>
-                {saving ? "Saving…" : joined ? "Update position" : "Save my position"}
+                {saving ? "Saving…" : joined ? "Save" : "Save position"}
               </button>
               {joined && <button className="btn quiet" onClick={cancelChanges} disabled={saving}>Cancel</button>}
             </div>
@@ -761,7 +761,7 @@ export default function DinnerApp() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          Place details<ArrowSquareOutIcon />
+                          OpenStreetMap<ArrowSquareOutIcon />
                         </a>
                       </div>
                     )}

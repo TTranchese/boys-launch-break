@@ -131,7 +131,7 @@ Tuscany is only the initial viewport. There are no geographic pan bounds,
 regional outline, or exterior fade mask. Users can zoom out to level 2 and
 pan anywhere. Selecting a venue or placing an offscreen draft can focus that
 specific action; polling does not recenter an unchanged selection. The
-“Your group” button explicitly fits participants, the selected venue, and
+“Show everyone” button explicitly fits participants, the selected venue, and
 any draft pin. Existing Tuscany position validation and restaurant search
 scope remain product rules, independent of free map navigation.
 

@@ -81,7 +81,7 @@ or run `npx vercel` from the project folder.
 
 The map uses a custom vector style from the shared palette, rendered with
 MapLibre inside Leaflet using OpenFreeMap tiles. Map navigation is unrestricted;
-Tuscany is the initial view. “Your group” recenters on participants and the
+Tuscany is the initial view. “Show everyone” recenters on participants and the
 selected venue. Saving positions and searching for dinner remain Tuscany scoped.
 The MapLibre worker is self-hosted and prepared automatically before dev/build
 (`npm run map:prepare`); the vector basemap requires WebGL2.

@@ -41,14 +41,14 @@ function GroupFocus({ points }: { points: Point[] }) {
   }, []);
   return (
     <div className="map-group-control" ref={control}>
-      <button className="btn ghost" aria-label="Show the group on the map" onClick={() => {
+      <button className="btn ghost" onClick={() => {
         const b = TUSCANY_BOUNDS;
         const bounds = points.length
           ? L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]))
           : L.latLngBounds([b.south, b.west], [b.north, b.east]);
         map.fitBounds(bounds, { ...mapMotion(), padding: [48, 48], maxZoom: 13 });
       }}>
-        <CornersOutIcon />Your group
+        <CornersOutIcon />Show everyone
       </button>
     </div>
   );
