@@ -16,6 +16,8 @@ import {
   type DinnerPlace, type DinnerResponse, type DinnerResult, type GroupResponse, type ParticipantRoute, type RoutesResponse,
 } from "@/lib/types";
 
+import type { MapFocus } from "./DinnerMap";
+
 const DinnerMap = dynamic(() => import("./DinnerMap"), {
   ssr: false,
   loading: () => <div className="map-loading">Loading map…</div>,
@@ -36,7 +38,8 @@ const storage = {
   },
 };
 
-type SearchResult = { id: number; label: string; lat: number; lng: number };
+type Box = { south: number; west: number; north: number; east: number };
+type SearchResult = { id: number; label: string; lat: number; lng: number; box: Box };
 
 type Me = { id: string; name: string; lat?: number; lng?: number };
 
@@ -55,9 +58,12 @@ export default function DinnerApp() {
   const sheetTop = useRef<HTMLDivElement>(null);
   const middleDetent = useRef<HTMLDivElement>(null);
   const panel = useRef<HTMLElement>(null);
+  const sheetTrack = useRef<HTMLDivElement>(null);
+  const mapArea = useRef<HTMLElement>(null);
+  const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
   const [detent, setDetent] = useState<Detent>("low");
   const [picking, setPicking] = useState(false);
-  const beforePicking = useRef<{ draft: Point | null; label: string | null; detent: Detent } | null>(null);
+  const beforePicking = useRef<{ draft: Point | null; label: string | null; query: string; detent: Detent } | null>(null);
   const [groupId, setGroupId] = useState<string | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -97,6 +103,19 @@ export default function DinnerApp() {
   const goTo = (d: Detent, instant = false) => {
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     sheet.current?.scrollTo({ top: detentTop(d), behavior: instant || reduce ? "instant" : "smooth" });
+  };
+  /** How much of the map the sheet hides when resting at a detent; nothing beside the desktop panel. */
+  const sheetCover = (d: Detent) => {
+    if (!sheetTrack.current || getComputedStyle(sheetTrack.current).display === "none") return 0;
+    const mapHeight = mapArea.current?.getBoundingClientRect().height ?? 0;
+    const sheetTopOnScreen = (panel.current?.offsetTop ?? 0) - detentTop(d);
+    return Math.max(0, mapHeight - sheetTopOnScreen);
+  };
+  /** Show a place or the whole group, bringing the map out from under a full-height sheet. */
+  const focusMap = (target: MapFocus["target"]) => {
+    const resting = detent === "full" ? "middle" : detent;
+    if (resting !== detent) goTo(resting);
+    setMapFocus({ key: Date.now(), target, bottomInset: sheetCover(resting) });
   };
   const onSheetScroll = () => {
     const top = sheet.current?.scrollTop ?? 0;
@@ -260,6 +279,8 @@ export default function DinnerApp() {
   };
   const onMapTap = (p: Point) => {
     setDraftLabel(null);
+    // The field names the chosen place; once the pin moves elsewhere that name would be wrong.
+    setQuery("");
     onMapClick(p);
   };
 
@@ -278,7 +299,10 @@ export default function DinnerApp() {
           return;
         }
         setDraftLabel("your current location");
+        setQuery("");
         onMapClick(p);
+        // Geolocation is only town-accurate, so frame the neighbourhood around it.
+        focusMap({ center: p, area: { south: p.lat - 0.02, north: p.lat + 0.02, west: p.lng - 0.03, east: p.lng + 0.03 } });
       },
       (err) => {
         setLocating(false);
@@ -320,10 +344,16 @@ export default function DinnerApp() {
         });
       const res = await fetch(url);
       if (!res.ok) throw new Error();
-      const json = (await res.json()) as { place_id: number; display_name: string; lat: string; lon: string }[];
+      const json = (await res.json()) as {
+        place_id: number; display_name: string; lat: string; lon: string;
+        boundingbox: [string, string, string, string]; // south, north, west, east
+      }[];
       setResults(
         json
-          .map((r) => ({ id: r.place_id, label: r.display_name, lat: Number(r.lat), lng: Number(r.lon) }))
+          .map((r) => {
+            const [south, north, west, east] = r.boundingbox.map(Number);
+            return { id: r.place_id, label: r.display_name, lat: Number(r.lat), lng: Number(r.lon), box: { south, north, west, east } };
+          })
           .filter((r) => inTuscany(r)),
       );
     } catch {
@@ -334,10 +364,14 @@ export default function DinnerApp() {
   };
 
   const pickResult = (r: SearchResult) => {
+    const name = r.label.split(",")[0];
     setResults(null);
-    setQuery("");
-    setDraftLabel(r.label.split(",")[0]);
+    // Keep the choice visible in the field, as a native suggestion list does.
+    setQuery(name);
+    setDraftLabel(name);
     onMapClick({ lat: r.lat, lng: r.lng });
+    // Frame the place itself: a town shows the town, an address shows its street.
+    focusMap({ center: r, area: r.box });
   };
 
   const save = async () => {
@@ -362,7 +396,9 @@ export default function DinnerApp() {
       setDraft(null);
       setError(null);
       await load();
-      positionStatus.current?.focus();
+      positionStatus.current?.focus({ preventScroll: true });
+      // With the new position in, step back to the whole group.
+      focusMap("everyone");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not save");
     } finally {
@@ -410,7 +446,7 @@ export default function DinnerApp() {
 
   // --- placing my pin: map taps only move it while this mode is on ---
   const startPicking = () => {
-    beforePicking.current = { draft, label: draftLabel, detent };
+    beforePicking.current = { draft, label: draftLabel, query, detent };
     setError(null);
     setPicking(true);
     goTo("low");
@@ -420,6 +456,7 @@ export default function DinnerApp() {
     if (!keep) {
       setDraft(before?.draft ?? null);
       setDraftLabel(before?.label ?? null);
+      setQuery(before?.query ?? "");
       setError(null);
     }
     setPicking(false);
@@ -443,6 +480,7 @@ export default function DinnerApp() {
       const i = dinner?.places.findIndex((p) => p.id === id) ?? -1;
       if (i >= 0) setSelectedIdx(i);
     },
+    focus: mapFocus,
     onMapClick: picking ? onMapTap : () => {},
   };
 
@@ -455,11 +493,11 @@ export default function DinnerApp() {
   return (
     <IconContext.Provider value={{ className: "app-icon", weight: "regular", "aria-hidden": true }}>
     <div className="layout" ref={layout}>
-      <main className={picking ? "map map--picking" : "map"} aria-label="Group map">
+      <main className={picking ? "map map--picking" : "map"} aria-label="Group map" ref={mapArea}>
         <DinnerMap {...mapProps} />
       </main>
       <div className="sheet" ref={sheet} onScroll={onSheetScroll}>
-      <div className="sheet__track" aria-hidden="true">
+      <div className="sheet__track" aria-hidden="true" ref={sheetTrack}>
         <div className="sheet__detent" ref={middleDetent} />
       </div>
       <aside className="panel" ref={panel}
@@ -536,6 +574,16 @@ export default function DinnerApp() {
               e.preventDefault();
               setResults(null);
               document.getElementById("location-search")?.focus();
+            }
+            // Arrow keys move between the field and the results, as in any native suggestion list.
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              const options = [...e.currentTarget.querySelectorAll<HTMLButtonElement>(".results__option")];
+              if (!options.length) return;
+              e.preventDefault();
+              const i = options.indexOf(document.activeElement as HTMLButtonElement);
+              if (e.key === "ArrowDown") options[Math.min(i + 1, options.length - 1)].focus();
+              else if (i <= 0) document.getElementById("location-search")?.focus();
+              else options[i - 1].focus();
             }
           }}>
             <label htmlFor="location-search">Your town or address</label>

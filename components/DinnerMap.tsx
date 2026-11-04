@@ -31,6 +31,42 @@ function BrandedBasemap() {
   return null;
 }
 
+type Box = { south: number; west: number; north: number; east: number };
+
+/** Something the form asks the map to show; a new `key` repeats the request. */
+export type MapFocus = {
+  key: number;
+  /**
+   * A place is centred on its point, zoomed so its area fits (a town shows the town,
+   * an address its street). "everyone" fits the group as it is when the request lands.
+   */
+  target: { center: Point; area: Box } | "everyone";
+  /** Pixels at the bottom of the map hidden under the mobile sheet. */
+  bottomInset: number;
+};
+
+const MAP_PADDING = 48;
+const GROUP_MAX_ZOOM = 13;
+const PLACE_MAX_ZOOM = 15;
+/** A position is a point: even a province-sized result stays framed at town level. */
+const PLACE_MIN_ZOOM = 11;
+
+function fitTo(map: L.Map, bounds: L.LatLngBounds, maxZoom: number, bottomInset = 0) {
+  map.fitBounds(bounds, {
+    ...mapMotion(),
+    paddingTopLeft: [MAP_PADDING, MAP_PADDING],
+    paddingBottomRight: [MAP_PADDING, MAP_PADDING + bottomInset],
+    maxZoom,
+  });
+}
+
+const groupBounds = (points: Point[]) => {
+  const b = TUSCANY_BOUNDS;
+  return points.length
+    ? L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]))
+    : L.latLngBounds([b.south, b.west], [b.north, b.east]);
+};
+
 function GroupFocus({ points }: { points: Point[] }) {
   const map = useMap();
   const control = useRef<HTMLDivElement>(null);
@@ -41,13 +77,7 @@ function GroupFocus({ points }: { points: Point[] }) {
   }, []);
   return (
     <div className="map-group-control" ref={control}>
-      <button className="btn ghost" onClick={() => {
-        const b = TUSCANY_BOUNDS;
-        const bounds = points.length
-          ? L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]))
-          : L.latLngBounds([b.south, b.west], [b.north, b.east]);
-        map.fitBounds(bounds, { ...mapMotion(), padding: [48, 48], maxZoom: 13 });
-      }}>
+      <button className="btn ghost" onClick={() => fitTo(map, groupBounds(points), GROUP_MAX_ZOOM)}>
         <CornersOutIcon />Show everyone
       </button>
     </div>
@@ -120,14 +150,22 @@ function ResizeMap() {
   return null;
 }
 
-/** Pan to a newly picked pin when it's off screen. */
-function FlyTo({ point }: { point: Point | null }) {
+/** Carry out the form's request to show a place or the whole group. */
+function Focus({ focus, everyone }: { focus: MapFocus | null; everyone: Point[] }) {
   const map = useMap();
   useEffect(() => {
-    if (point && !map.getBounds().pad(-0.1).contains([point.lat, point.lng])) {
-      flyTo(map, L.latLng(point.lat, point.lng), Math.max(map.getZoom(), 11));
-    }
-  }, [point, map]);
+    if (!focus) return;
+    const t = focus.target;
+    // Never let the sheet's share of the map squeeze the visible area below a usable size.
+    const inset = Math.min(focus.bottomInset, map.getSize().y * 0.6);
+    if (t === "everyone") { fitTo(map, groupBounds(everyone), GROUP_MAX_ZOOM, inset); return; }
+    const area = L.latLngBounds([t.area.south, t.area.west], [t.area.north, t.area.east]);
+    const fitted = map.getBoundsZoom(area, false, L.point(MAP_PADDING * 2, MAP_PADDING * 2 + inset));
+    const zoom = Math.min(Math.max(fitted, PLACE_MIN_ZOOM), PLACE_MAX_ZOOM);
+    // Centre the place in the part of the map the sheet leaves visible.
+    const center = map.unproject(map.project([t.center.lat, t.center.lng], zoom).add([0, inset / 2]), zoom);
+    flyTo(map, center, zoom);
+  }, [focus?.key]); // eslint-disable-line react-hooks/exhaustive-deps
   return null;
 }
 
@@ -151,12 +189,13 @@ export type DinnerMapProps = {
   places: DinnerPlace[];
   selected: DinnerPlace | null;
   routes: ParticipantRoute[];
+  focus: MapFocus | null;
   onMapClick: (p: Point) => void;
   onSelectPlace: (id: string) => void;
 };
 
 export default function DinnerMap({
-  participants, colorOf, myId, draft, idealPoint, places, selected, routes, onMapClick, onSelectPlace,
+  participants, colorOf, myId, draft, idealPoint, places, selected, routes, focus, onMapClick, onSelectPlace,
 }: DinnerMapProps) {
   const b = TUSCANY_BOUNDS;
   const bounds = L.latLngBounds([b.south, b.west], [b.north, b.east]);
@@ -195,7 +234,7 @@ export default function DinnerMap({
       <GroupFocus points={[...participants, ...(selected ? [selected] : []), ...(draft ? [draft] : [])]} />
       <ResizeMap />
       <ClickHandler onClick={onMapClick} />
-      <FlyTo point={draft} />
+      <Focus focus={focus} everyone={participants} />
       <FitSelection points={selected ? [...participants, selected] : []} selectedId={selected?.id ?? null} />
 
       {/* Road routes (dashed straight line while loading or if routing failed) */}

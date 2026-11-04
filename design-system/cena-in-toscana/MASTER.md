@@ -82,6 +82,9 @@ Buttons use 120ms colour feedback. Map movement respects reduced motion;
 spinners stop rotating while their loading text remains. Search results
 float outside document flow on an opaque Daylight surface with no shadow,
 wrap long addresses, and dismiss on Escape, outside press, or focus exit.
+A result lifts to Paper on hover and on keyboard focus (with the focus ring),
+turns Sunshine on press because pressing selects it, and the arrow keys move
+between the search field and the results.
 
 ## Source ownership and checks
 
@@ -129,8 +132,11 @@ optimum/draft markers are pink. Popups use rounded Daylight surfaces.
 
 Tuscany is only the initial viewport. There are no geographic pan bounds,
 regional outline, or exterior fade mask. Users can zoom out to level 2 and
-pan anywhere. Selecting a venue or placing an offscreen draft can focus that
-specific action; polling does not recenter an unchanged selection. The
+pan anywhere. Selecting a venue fits it with the group. Picking a search
+result or your location centres it, zoomed to its area but never wider than
+town level; saving a position then fits everyone. On phones these moves lower
+a full sheet to the middle detent and centre within the map it leaves visible.
+Polling does not recenter an unchanged selection. The
 “Show everyone” button explicitly fits participants, the selected venue, and
 any draft pin. Existing Tuscany position validation and restaurant search
 scope remain product rules, independent of free map navigation.

@@ -131,7 +131,8 @@
     --results-offset: var(--space-2);
     --results-radius: var(--radius-control);
     --results-item-radius: var(--radius-small);
-    --results-item-hover: var(--color-subtle);
+    /* The list sits on Daylight, so the highlight has to lift to Paper to be seen. */
+    --results-item-hover: var(--color-surface);
     --panel-bg: var(--color-surface);
     --panel-border: var(--color-surface-border);
     --panel-padding-compact: var(--space-6);

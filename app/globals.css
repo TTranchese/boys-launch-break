@@ -111,11 +111,13 @@ a { color: var(--color-accent); }
     font-size: var(--text-label);
 }
 .results__option:hover { background: var(--results-item-hover); }
-.results__option:active { background: var(--color-selected); }
+/* Focus marks where you are, not what you chose: it keeps the hover lift and adds the ring. */
 .results__option:focus-visible {
     outline-offset: calc(-1 * var(--focus-width));
-    background: var(--color-selected);
+    background: var(--results-item-hover);
 }
+/* Sunshine means "selected", which is exactly what a press does. Show it on contact, with no fade. */
+.results__option:active { background: var(--color-selected); transition: none; }
 .error { color: var(--color-danger); background: var(--color-danger-subtle); padding: var(--space-3); border-radius: var(--radius-small); font-size: var(--text-label); }
 .field { display: flex; flex-direction: column; gap: var(--space-2); margin-bottom: var(--space-4); }
 .field > span, .field > label { font-size: var(--text-label); font-weight: var(--weight-strong); }
