@@ -2,20 +2,36 @@
 
 import L from "leaflet";
 import { Fragment, useEffect, useRef } from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, Polygon, useMapEvents, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
 import { CornersOutIcon, CarIcon } from "@phosphor-icons/react";
-import tuscanyBoundary from "@/lib/tuscany-boundary.json";
+import { getVersion, setWorkerUrl } from "maplibre-gl";
+import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
+import { createMapStyle } from "@/lib/map-style";
 import type { Participant } from "@/lib/db";
 import type { Point } from "@/lib/geo";
 import { TUSCANY_BOUNDS } from "@/lib/geo";
 import { formatDuration, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
 
-const regionRings = tuscanyBoundary as L.LatLngTuple[][];
-const worldRing: L.LatLngTuple[] = [
-  [85, -180], [85, 180], [-85, 180], [-85, -180],
-];
+const MAP_ATTRIBUTION = '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>';
 
-function TuscanyFocus() {
+function BrandedBasemap() {
+  const map = useMap();
+  useEffect(() => {
+    setWorkerUrl(`/maplibre/worker.mjs?v=${getVersion()}`);
+    const layer = maplibreGL({
+      style: createMapStyle(), attributionControl: false,
+    });
+    layer.addTo(map);
+    map.attributionControl.addAttribution(MAP_ATTRIBUTION);
+    return () => {
+      map.attributionControl.removeAttribution(MAP_ATTRIBUTION);
+      map.removeLayer(layer);
+    };
+  }, [map]);
+  return null;
+}
+
+function GroupFocus({ points }: { points: Point[] }) {
   const map = useMap();
   const control = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -23,26 +39,19 @@ function TuscanyFocus() {
     L.DomEvent.disableClickPropagation(control.current);
     L.DomEvent.disableScrollPropagation(control.current);
   }, []);
-  return <>
-    <Polygon positions={[worldRing, ...regionRings]} pathOptions={{
-      className: "map-context-mask", fillRule: "evenodd",
-      stroke: false, interactive: false,
-    }} />
-    {regionRings.map((ring, i) => (
-      <Polygon key={i} positions={ring} pathOptions={{
-        className: "map-region-outline", fill: false, interactive: false,
-      }} />
-    ))}
-    <div className="map-region-control" ref={control}>
-      <button className="btn ghost" aria-label="Show all Tuscany" onClick={() =>
-        map.fitBounds(L.latLngBounds(regionRings.flat()), {
-          ...mapMotion(), padding: [16, 16], maxZoom: 9,
-        })
-      }>
-        <CornersOutIcon />Tuscany
+  return (
+    <div className="map-group-control" ref={control}>
+      <button className="btn ghost" aria-label="Show the group on the map" onClick={() => {
+        const b = TUSCANY_BOUNDS;
+        const bounds = points.length
+          ? L.latLngBounds(points.map((p) => [p.lat, p.lng] as [number, number]))
+          : L.latLngBounds([b.south, b.west], [b.north, b.east]);
+        map.fitBounds(bounds, { ...mapMotion(), padding: [48, 48], maxZoom: 13 });
+      }}>
+        <CornersOutIcon />Your group
       </button>
     </div>
-  </>;
+  );
 }
 
 const escapeHtml = (s: string) =>
@@ -52,9 +61,21 @@ const escapeHtml = (s: string) =>
 const icon = (html: string) =>
   L.divIcon({ className: "map-marker", html, iconSize: [0, 0], iconAnchor: [0, 0] });
 
-const dot = (color: string, label: string, draft = false) =>
+// Each person's sticker sits at its own slight angle, derived from their id so it
+// stays put across reloads and polls.
+const MAX_TILT_DEG = 8;
+const tiltOf = (id: string) => {
+  // FNV-1a plus a final mix, so near-identical ids (mock-1, mock-2) still scatter.
+  let h = 0x811c9dc5;
+  for (let i = 0; i < id.length; i++) h = Math.imul(h ^ id.charCodeAt(i), 0x01000193);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h ^= h >>> 16;
+  return ((h >>> 0) % (MAX_TILT_DEG * 2 + 1)) - MAX_TILT_DEG;
+};
+
+const dot = (color: string, label: string, tilt: number, { draft = false, arrive = false } = {}) =>
   icon(
-    `<div class="pin${draft ? " pin-draft" : ""}" style="--person-color:${color}">${escapeHtml(label)}</div>`,
+    `<div class="pin${draft ? " pin-draft" : ""}${arrive ? " pin-arrive" : ""}" style="--person-color:${color};--pin-tilt:${tilt}deg">${escapeHtml(label)}</div>`,
   );
 
 const idealIcon = icon(`<div class="pin pin-ideal">◎</div>`);
@@ -141,19 +162,37 @@ export default function DinnerMap({
   const bounds = L.latLngBounds([b.south, b.west], [b.north, b.east]);
   const routeOf = (id: string) => routes.find((r) => r.participantId === id);
 
+  // Person icons are cached so Leaflet keeps the same marker element across renders:
+  // a fresh icon would replace the element (restarting or cutting short the pop-in).
+  // A pin pops in only when its icon is first built for someone not seen before;
+  // `seen` is recorded after commit so StrictMode's double render doesn't swallow it.
+  const seen = useRef(new Set<string>());
+  const personIcons = useRef(new Map<string, L.DivIcon>());
+  useEffect(() => {
+    participants.forEach((p) => seen.current.add(p.id));
+  }, [participants]);
+  const personIcon = (p: Participant) => {
+    const color = colorOf(p.id);
+    const label = p.name.charAt(0).toUpperCase();
+    const key = `${p.id}|${color}|${label}`;
+    let cached = personIcons.current.get(key);
+    if (!cached) {
+      cached = dot(color, label, tiltOf(p.id), { arrive: !seen.current.has(p.id) });
+      personIcons.current.set(key, cached);
+    }
+    return cached;
+  };
+
   return (
     <MapContainer
       bounds={bounds}
-      minZoom={7}
-      maxBounds={bounds.pad(0.05)}
-      maxBoundsViscosity={1.0}
+      minZoom={2}
+      maxZoom={19}
+      worldCopyJump
       className="dinner-map"
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a> · boundary © <a href="https://github.com/guglielmo/geojson-italy">ISTAT</a> (<a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>)'
-        url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      <TuscanyFocus />
+      <BrandedBasemap />
+      <GroupFocus points={[...participants, ...(selected ? [selected] : []), ...(draft ? [draft] : [])]} />
       <ResizeMap />
       <ClickHandler onClick={onMapClick} />
       <FlyTo point={draft} />
@@ -183,7 +222,7 @@ export default function DinnerMap({
         .map((p) => {
           const leg = selected?.legs.find((l) => l.participantId === p.id);
           return (
-            <Marker key={p.id} position={[p.lat, p.lng]} icon={dot(colorOf(p.id), p.name.charAt(0).toUpperCase())} zIndexOffset={tokenNumber("--map-layer-person")} title={p.name}>
+            <Marker key={p.id} position={[p.lat, p.lng]} icon={personIcon(p)} zIndexOffset={tokenNumber("--map-layer-person")} title={p.name}>
               <Popup>
                 <strong>{p.name}</strong>
                 {p.id === myId && " (you)"}
@@ -198,7 +237,7 @@ export default function DinnerMap({
         })}
 
       {draft && (
-        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", true)} zIndexOffset={tokenNumber("--map-layer-draft")} title="Unsaved position">
+        <Marker position={[draft.lat, draft.lng]} icon={dot(colorOf(myId), "?", tiltOf(myId), { draft: true })} zIndexOffset={tokenNumber("--map-layer-draft")} title="Unsaved position">
           <Popup>Your new position — press “Save” to share it</Popup>
         </Marker>
       )}

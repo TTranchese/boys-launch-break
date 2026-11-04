@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { Share, LoaderCircle, Search } from "lucide-react";
 import {
   IconContext, CheckIcon, CrosshairIcon, MapTrifoldIcon,
-  NavigationArrowIcon, CarIcon, WarningCircleIcon, ForkKnifeIcon,
+  NavigationArrowIcon, WarningCircleIcon, ForkKnifeIcon,
   WineIcon, BeerSteinIcon, ArrowSquareOutIcon, ArrowClockwiseIcon,
   PlusIcon, CaretDownIcon,
 } from "@phosphor-icons/react";
@@ -473,8 +473,9 @@ export default function DinnerApp() {
             <span className="sheet__handle" />
           </button>
           <header className="brand">
+            <div className="brand__eyebrow">GOOD FOOD. GREAT COMPANY.</div>
             <div className="row between brand__heading">
-              <h1>Cena in Toscana</h1>
+              <h1>Cena in<br />Toscana<span className="brand__sticker" aria-hidden="true"><ForkKnifeIcon /></span></h1>
               <button className="btn ghost share-button" onClick={share} aria-label={copied ? "Link copied!" : "Share link"}>
                 {copied ? <CheckIcon /> : <Share className="app-icon" aria-hidden="true" />}
                 <span className="share-button__label">{copied ? "Link copied!" : "Share link"}</span>
@@ -514,7 +515,7 @@ export default function DinnerApp() {
           ) : null}
         </div>
 
-        <section className="card">
+        <section className="card card--position">
           <h2>{joined ? "Your position" : "Add yourself"}</h2>
           <label className="field">
             <span>Your name</span>
@@ -613,40 +614,44 @@ export default function DinnerApp() {
           {error && !picking && <p className="error" role="alert">{error}</p>}
         </section>
 
-        <section className="card">
+        <section className="card card--people">
           <h2 className="section-heading">
             <span>Who’s coming</span>
-            <span className="count-chip" role="status" aria-atomic="true">
-              <span aria-hidden="true">{participants.length}</span>
-              <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
-            </span>
+            {data && (
+              <span className="count-chip" role="status" aria-atomic="true">
+                <span aria-hidden="true">{participants.length}</span>
+                <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
+              </span>
+            )}
           </h2>
-          {participants.length === 0 ? (
+          {!data ? (
+            // Until the server answers, an empty list would claim nobody is coming.
+            !groupError && <p className="muted small" role="status">Loading the group…</p>
+          ) : participants.length === 0 ? (
             <p className="muted small">Nobody yet. Be the first!</p>
           ) : (
             <ul className="people">
-              {participants.map((p) => (
-                <li key={p.id}>
-                  <span className="avatar" aria-hidden="true" style={{ "--person-color": colorOf(p.id) } as CSSProperties}>{p.name.charAt(0).toUpperCase()}</span>
-                  <span className="people__name">
-                    {p.name}
-                    {p.id === me?.id && <span className="muted small">You</span>}
-                  </span>
-                  {selected && (() => {
-                    const leg = selected.legs.find((l) => l.participantId === p.id);
-                    return leg ? (
-                      <span className="muted small push inline-meta">
-                        <CarIcon /> {formatDuration(leg.durationS)} · {(leg.distanceM / 1000).toFixed(0)} km
-                      </span>
-                    ) : null;
-                  })()}
-                </li>
-              ))}
+              {participants.map((p) => {
+                const leg = selected?.legs.find((l) => l.participantId === p.id);
+                const meta = [
+                  p.id === me?.id ? "You" : null,
+                  leg ? `${formatDuration(leg.durationS)} · ${(leg.distanceM / 1000).toFixed(0)} km` : null,
+                ].filter(Boolean).join(" · ");
+                return (
+                  <li key={p.id}>
+                    <span className="avatar" aria-hidden="true" style={{ "--person-color": colorOf(p.id) } as CSSProperties}>{p.name.charAt(0).toUpperCase()}</span>
+                    <span className="people__name">
+                      {p.name}
+                      {meta && <span className="people__meta muted small">{meta}</span>}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
 
-        <section className="card">
+        <section className="card card--places">
           <h2>Where to eat</h2>
           {Boolean(dinner?.places.length) && (
             <>
@@ -681,7 +686,10 @@ export default function DinnerApp() {
               </div>
             )}
           </div>
-          {participants.length === 0 ? (
+          {!data ? (
+            // The group is still loading; "Who's coming" already says so.
+            null
+          ) : participants.length === 0 ? (
             <p className="muted small">Save your position to see places for dinner.</p>
           ) : dinnerState === "loading" && !dinner ? (
             <div className="loading-state" role="status">

@@ -8,6 +8,7 @@ const nextConfig = {
     // piped subprocess and leave `tsc --showConfig` output empty.
     useTypeScriptCli: false,
   },
+  allowedDevOrigins: ['192.168.1.51'],
 };
 
 export default nextConfig;

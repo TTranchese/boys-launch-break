@@ -6,3 +6,6 @@ out/
 next-env.d.ts
 .env*.local
 .DS_Store
+
+# Generated from the installed MapLibre package before dev/build.
+/public/maplibre/

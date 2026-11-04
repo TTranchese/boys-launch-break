@@ -1,4 +1,4 @@
-"""Copy CSS-compatible SCSS sources and check declared theme contrast pairs."""
+"""Check the light-only design palette and generated CSS drift."""
 
 from pathlib import Path
 import re
@@ -23,13 +23,9 @@ def contrast(a, b):
 source = (SOURCE / "tokens.scss").read_text()
 blocks = re.findall(r"([^{}]+)\{([^{}]*)\}", source)
 light = {}
-dark = {}
 for selector, body in blocks:
     entries = dict(re.findall(r"(--[\w-]+)\s*:\s*([^;]+);", body))
-    if '[data-theme="dark"]' in selector:
-        dark.update(entries)
-    else:
-        light.update(entries)
+    light.update(entries)
 
 
 def resolve(tokens, key):
@@ -50,7 +46,7 @@ pairs = [
     ("accent", "selected", 3), ("control-border", "surface", 3),
     ("control-border", "subtle", 3),
     ("control-border", "selected", 3),
-    # Filled inputs use a quiet outline and a contrasting bottom edge.
+    # Boundary tokens remain available for functional map controls.
     ("field-edge", "canvas", 3), ("field-edge", "surface", 3),
     ("success", "success-subtle", 4.5),
     ("warning", "warning-subtle", 4.5),
@@ -58,7 +54,10 @@ pairs = [
     ("person-1", "surface", 4.5), ("person-2", "surface", 4.5),
     *[(f"person-{i}", "surface", 4.5) for i in range(3, 11)],
 ]
-for theme, tokens in (("light", light), ("dark", light | dark)):
+pairs += [("on-action", f"person-{i}", 4.5) for i in range(1, 11)]
+pairs += [(role, surface, 4.5) for role in ("text", "muted")
+          for surface in ("sky", "grass", "pink", "tangerine", "sunshine")]
+for theme, tokens in (("light", light),):
     ratios = []
     for foreground, background, minimum in pairs:
         ratio = contrast(resolve(tokens, f"--color-{foreground}"), resolve(tokens, f"--color-{background}"))

@@ -1,8 +1,12 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="only light">
+    <meta name="theme-color" content="#ffffff">
+    <link rel="preload" href="/fonts/bricolage-grotesque/BricolageGrotesque-latin-wght.woff2" as="font" type="font/woff2" crossorigin="anonymous">
+    <link rel="stylesheet" href="/design-system/fonts.css">
     <title>Cena in Toscana · Design system</title>
     <link rel="stylesheet" href="/design-system/tokens.css">
     <link rel="stylesheet" href="/design-system/preview.css">
@@ -13,33 +17,33 @@
     <header class="topbar">
         <div class="brand">
             <span class="brand__mark" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.2 7-12A7 7 0 0 0 5 9c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2"/></svg></span>
-            Cena in Toscana <span class="badge">System / 0.1</span>
+            Cena in Toscana <span class="badge">System / 0.2</span>
         </div>
-        <button class="button button--secondary" id="theme" type="button" aria-pressed="false">Dark theme</button>
+        <span class="badge">Light theme · DESIGN.md</span>
     </header>
     <main id="main" tabindex="-1">
         <div class="intro">
-            <p class="eyebrow muted">Design foundation · Clean &amp; neutral</p>
-            <h1 class="intro__title">Less to navigate.<br>More reason to meet.</h1>
-            <p class="intro__copy">A quiet interface for a shared decision. Clear places, comparable journeys, and one obvious next step.</p>
-            <p class="small muted">Proposed visual system. All people, venues, and journey times below are illustrative.</p>
+            <p class="eyebrow muted">Design foundation · A little more playful</p>
+            <h1 class="intro__title">Good food.<br>Great company.</h1>
+            <p class="intro__copy">Bright colours, bold type, and a place at the table for everyone. A shared dinner decision with a little personality.</p>
+            <p class="small muted">Toca Boca inspired visual system. All people, venues, and journey times below are illustrative.</p>
         </div>
 
         <section class="section" aria-labelledby="foundation-title">
-            <div class="section__heading"><h2 class="section__title" id="foundation-title">01 / Foundations</h2><p class="section__note">Neutral by default. Color with a purpose.</p></div>
+            <div class="section__heading"><h2 class="section__title" id="foundation-title">01 / Foundations</h2><p class="section__note">Candy colours. Midnight type. Flat surfaces.</p></div>
             <div class="panel stack">
                 <div class="palette">
-                    <div class="swatch"><div class="swatch__color swatch__color--canvas"></div><p class="small">Canvas</p><p class="caption muted">Background</p></div>
-                    <div class="swatch"><div class="swatch__color swatch__color--surface"></div><p class="small">Surface</p><p class="caption muted">Panels</p></div>
-                    <div class="swatch"><div class="swatch__color swatch__color--text"></div><p class="small">Graphite</p><p class="caption muted">Content</p></div>
-                    <div class="swatch"><div class="swatch__color swatch__color--muted"></div><p class="small">Slate</p><p class="caption muted">Supporting</p></div>
-                    <div class="swatch"><div class="swatch__color swatch__color--action"></div><p class="small">Action</p><p class="caption muted">Primary CTA</p></div>
-                    <div class="swatch"><div class="swatch__color swatch__color--accent"></div><p class="small">Blue</p><p class="caption muted">Focus &amp; selection</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--canvas"></div><p class="small">Sky Blue</p><p class="caption muted">#59acff</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--surface"></div><p class="small">Grass Green</p><p class="caption muted">#62d962</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--text"></div><p class="small">Midnight Mouth</p><p class="caption muted">#101014</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--muted"></div><p class="small">Bubblegum Pink</p><p class="caption muted">#ff8cbc</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--action"></div><p class="small">Tangerine</p><p class="caption muted">#ff7040</p></div>
+                    <div class="swatch"><div class="swatch__color swatch__color--accent"></div><p class="small">Sunshine Yellow</p><p class="caption muted">#ffe359</p></div>
                 </div>
                 <div class="divider"></div>
                 <div class="grid">
-                    <div class="stack"><h3 class="type__title">Find a place that works<br>for everyone.</h3><p>System sans. Clear hierarchy. Familiar controls.</p><p class="small muted">28 / 36 title · 16 / 24 body · 14 / 20 supporting</p></div>
-                    <div class="stack"><h3 class="section__title">Room to think.</h3><div class="space-demo" aria-label="Spacing examples in pixels"><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--8"></div><span class="small muted">8</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--16"></div><span class="small muted">16</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--24"></div><span class="small muted">24</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--32"></div><span class="small muted">32</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--48"></div><span class="small muted">48</span></div></div><p class="small muted">4px base · 10px controls · 14px panels · no card shadow</p></div>
+                    <div class="stack"><h3 class="type__title">Find a place that works<br>for everyone.</h3><p>Chunky sans headings. Tight tracking. Clear body copy.</p><p class="small muted">48px title · 28px section · 16px body · 14px supporting</p></div>
+                    <div class="stack"><h3 class="section__title">Room to think.</h3><div class="space-demo" aria-label="Spacing examples in pixels"><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--8"></div><span class="small muted">8</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--16"></div><span class="small muted">16</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--24"></div><span class="small muted">24</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--32"></div><span class="small muted">32</span></div><div class="space-demo__item"><div class="space-demo__bar space-demo__bar--48"></div><span class="small muted">48</span></div></div><p class="small muted">8px spacing · pill controls · 32px panels · no borders or shadows</p></div>
                 </div>
             </div>
         </section>
@@ -90,15 +94,7 @@
     </main>
 </div>
 <script>
-    const root = document.documentElement;
-    const themeButton = document.getElementById('theme');
-    const systemDark = window.matchMedia('(prefers-color-scheme: dark)');
-    themeButton.setAttribute('aria-pressed', String(systemDark.matches));
-    themeButton.addEventListener('click', () => {
-        const dark = !(root.dataset.theme ? root.dataset.theme === 'dark' : systemDark.matches);
-        root.dataset.theme = dark ? 'dark' : 'light';
-        themeButton.setAttribute('aria-pressed', String(dark));
-    });
+
     const venues = [
         { id: 'osteria', name: 'Osteria della Piazza', town: 'San Miniato', g: 18, m: 26 },
         { id: 'trattoria', name: 'Trattoria del Ponte', town: 'Fucecchio', g: 23, m: 23 },

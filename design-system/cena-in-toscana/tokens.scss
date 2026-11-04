@@ -2,20 +2,8 @@
 
 /* #PRIMITIVES */
 :root {
-    --neutral-0: #ffffff;
-    --neutral-25: #f6f7f8;
-    --neutral-50: #f4f5f6;
-    --neutral-100: #eef0f3;
-    --neutral-200: #dce0e5;
-    --neutral-400: #adb5c1;
-    --neutral-500: #7b8491;
-    --neutral-600: #5c6470;
-    --neutral-700: #414955;
-    --neutral-800: #272c33;
-    --neutral-850: #22262c;
-    --neutral-900: #1b1e22;
-    --neutral-950: #191c20;
-    --neutral-1000: #111315;
+    --brand-sticker-size: 48px;
+    --brand-sticker-rotation: -12deg;
     --space-unit: 8px;
     --space-1: calc(var(--space-unit) / 2);
     --space-2: var(--space-unit);
@@ -25,34 +13,33 @@
     --space-8: calc(var(--space-unit) * 4);
     --space-12: calc(var(--space-unit) * 6);
     --space-16: calc(var(--space-unit) * 8);
-    --font-title: "Fraunces", Georgia, serif;
+    --font-title: "Bricolage Grotesque", "Arial Black", "Arial Rounded MT Bold", Arial, sans-serif;
     --icon-size: 20px;
     --chip-min-size: 28px;
-    --map-context-opacity: 0.45;
-    --map-boundary-width: 2px;
     --map-layer-controls: 1000;
-    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-sans: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --text-caption: 0.75rem;
     --text-label: 0.875rem;
     --text-body: 1rem;
     --text-action: var(--text-body);
-    --text-section: 1.25rem;
-    --text-title: 1.75rem;
-    --text-brand-compact: 1.5rem;
-    --text-display: 2.5rem;
+    --text-section: 1.75rem;
+    --text-title: 3rem;
+    --text-brand-compact: 2rem;
+    --text-display: clamp(2.5rem, 6vw, 5rem);
     --weight-normal: 400;
     --weight-medium: 500;
-    --weight-strong: 600;
+    --weight-strong: 800;
+    --weight-title: 800;
     --leading-body: 1.5;
     --leading-label: 1.43;
-    --leading-title: 1.29;
-    --tracking-title: -0.02em;
+    --leading-title: 1;
+    --tracking-title: -0.03em;
     --border-width: 1px;
     --border-width-selected: 2px;
     --breakpoint-desktop: 1024px;
-    --radius-small: 6px;
-    --radius-control: 10px;
-    --radius-panel: 14px;
+    --radius-small: 16px;
+    --radius-control: 24px;
+    --radius-panel: 32px;
     --radius-full: 999px;
     --duration-feedback: 120ms;
     --duration-state: 180ms;
@@ -70,35 +57,45 @@
     --layer-toast: 50;
 }
 
-/* #SEMANTIC-LIGHT */
+/* #SEMANTIC-LIGHT — DESIGN.md candy palette */
 :root {
-    color-scheme: light;
-    --color-canvas: var(--neutral-25);
-    --color-surface: var(--neutral-0);
-    --color-elevated: var(--neutral-0);
-    --color-subtle: var(--neutral-100);
-    --color-text: var(--neutral-950);
-    --color-muted: var(--neutral-600);
-    --color-border: var(--neutral-200);
-    --color-surface-border: #eaedf0;
-    --color-field-edge: #848c98;
-    --color-control-border: var(--neutral-500);
-    --color-action: var(--neutral-850);
-    --color-action-hover: var(--neutral-700);
-    --color-action-pressed: var(--neutral-1000);
-    --color-on-action: var(--neutral-0);
-    --color-accent: #2458bd;
-    --color-selected: #edf3ff;
-    --color-success: #23643b;
-    --color-success-subtle: #edf7ef;
-    --color-warning: #805300;
-    --color-warning-subtle: #fff6df;
-    --color-danger: #b32935;
-    --color-danger-subtle: #fff0f1;
-    --color-disabled: var(--neutral-600);
-    --color-disabled-surface: var(--neutral-100);
-    --color-scrim: rgb(17 19 21 / 0.6);
-    --shadow-overlay: 0 12px 32px rgb(17 19 21 / 0.16);
+    /* Opt out of browser auto-darkening as well as native dark controls. */
+    color-scheme: only light;
+    --color-paper: #ffffff;
+    --color-daylight: #f2f2ff;
+    --color-midnight: #101014;
+    --color-ink: #0a0a0a;
+    --color-sky: #59acff;
+    --color-grass: #62d962;
+    --color-pink: #ff8cbc;
+    --color-tangerine: #ff7040;
+    --color-sunshine: #ffe359;
+    --color-canvas: var(--color-paper);
+    --color-surface: var(--color-paper);
+    --color-elevated: var(--color-daylight);
+    --color-subtle: var(--color-daylight);
+    --color-text: var(--color-midnight);
+    --color-muted: #303038;
+    --color-border: var(--color-midnight);
+    --color-surface-border: transparent;
+    --color-field-edge: var(--color-midnight);
+    --color-control-border: var(--color-midnight);
+    --color-action: var(--color-midnight);
+    --color-action-hover: #303038;
+    --color-action-pressed: var(--color-ink);
+    --color-on-action: var(--color-daylight);
+    --color-accent: var(--color-midnight);
+    --color-selected: var(--color-sunshine);
+    --color-success: var(--color-midnight);
+    --color-success-subtle: var(--color-grass);
+    --color-warning: var(--color-midnight);
+    --color-warning-subtle: var(--color-sunshine);
+    --color-danger: #76152f;
+    --color-danger-subtle: var(--color-pink);
+    --color-disabled: #52525c;
+    --color-disabled-surface: var(--color-daylight);
+    --color-scrim: rgb(16 16 20 / 0.6);
+    --shadow-overlay: none;
     --color-person-1: #2458bd;
     --color-person-2: #9b3f71;
     --color-person-3: #27715e;
@@ -109,58 +106,16 @@
     --color-person-8: #536634;
     --color-person-9: #8d4e21;
     --color-person-10: #5a608b;
-    --color-route-casing: var(--neutral-0);
-}
-
-/* #SEMANTIC-DARK */
-[data-theme="dark"] {
-    color-scheme: dark;
-    --color-canvas: var(--neutral-1000);
-    --color-surface: var(--neutral-900);
-    --color-elevated: var(--neutral-800);
-    --color-subtle: var(--neutral-800);
-    --color-text: var(--neutral-50);
-    --color-muted: var(--neutral-400);
-    --color-border: var(--neutral-700);
-    --color-surface-border: #2c323a;
-    --color-field-edge: #626e7d;
-    --color-control-border: #707b8a;
-    --color-action: var(--neutral-100);
-    --color-action-hover: var(--neutral-200);
-    --color-action-pressed: var(--neutral-400);
-    --color-on-action: var(--neutral-950);
-    --color-accent: #9bbcff;
-    --color-selected: #1e304e;
-    --color-success: #9dd9ae;
-    --color-success-subtle: #182c20;
-    --color-warning: #f0cd7a;
-    --color-warning-subtle: #302714;
-    --color-danger: #ffacb4;
-    --color-danger-subtle: #361e23;
-    --color-disabled: var(--neutral-400);
-    --color-disabled-surface: var(--neutral-800);
-    --color-scrim: rgb(0 0 0 / 0.72);
-    --shadow-overlay: 0 12px 32px rgb(0 0 0 / 0.4);
-    --color-person-1: #9bbcff;
-    --color-person-2: #e4a8cb;
-    --color-person-3: #86cbb5;
-    --color-person-4: #f0cd7a;
-    --color-person-5: #c8adf0;
-    --color-person-6: #f3a99e;
-    --color-person-7: #8acddd;
-    --color-person-8: #bfce94;
-    --color-person-9: #edbb90;
-    --color-person-10: #b6bee8;
-    --color-route-casing: var(--neutral-1000);
+    --color-route-casing: var(--color-paper);
 }
 
 /* #COMPONENT-ALIASES */
 :root {
     --button-bg: var(--color-action);
     --button-fg: var(--color-on-action);
-    --button-height: 44px;
-    --button-radius: var(--radius-control);
-    --field-bg: var(--color-canvas);
+    --button-height: 48px;
+    --button-radius: var(--radius-full);
+    --field-bg: var(--color-paper);
     --field-border: var(--color-surface-border);
     --field-edge: var(--color-field-edge);
     --field-height: 48px;
@@ -179,22 +134,26 @@
     --results-item-hover: var(--color-subtle);
     --panel-bg: var(--color-surface);
     --panel-border: var(--color-surface-border);
-    --panel-padding-compact: var(--space-4);
+    --panel-padding-compact: var(--space-6);
     --panel-padding-comfortable: var(--space-6);
     --panel-padding: var(--panel-padding-compact);
     --panel-radius: var(--radius-panel);
     --focus-width: 3px;
     --focus-offset: 3px;
-    --layout-planning-width: 400px;
+    --layout-planning-width: 460px;
     --sheet-peek-height: 200px; /* fallback; the app measures the sheet's top section */
     --sheet-middle-height: 55dvh;
-    --sheet-grabber-height: var(--space-6);
+    --sheet-grabber-height: var(--space-8);
     --sheet-handle-width: 36px;
     --sheet-handle-height: 5px;
     --map-person-size: 36px;
     --map-venue-size: 36px;
     --map-selected-size: 44px;
     --map-ideal-size: 24px;
+    /* Pins read as die-cut stickers: a white cut edge framed by a Midnight hairline. */
+    --map-pin-cut-width: 3px;
+    --map-pin-outline-width: var(--border-width);
+    --map-pin-arrive-scale: 0.6;
     --map-control-size: var(--button-height);
     --map-route-width: 4px;
     --map-route-casing-width: 7px;

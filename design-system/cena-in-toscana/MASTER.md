@@ -1,144 +1,142 @@
 # Cena in Toscana — design system
 
-Status: v0.1 adopted token foundation. Direction: clean and neutral, selected by the product owner. The live app and isolated preview consume the same generated token stylesheet. Product behavior and group URLs remain unchanged.
+Status: v0.2. Adapted to the Toca Boca reference captured in the root
+`DESIGN.md`. The app and interactive preview share generated tokens.
 
-## Product and principles
+## Direction
 
-Help friends in Tuscany choose a place to meet by comparing actual driving times. This is a shared planning tool, with a map as supporting evidence and a ranked list as the accessible decision surface.
+A white canvas with inset candy-colour slabs, chunky sans-serif headings,
+Midnight Mouth pill controls, and one playful utensil sticker beside the
+app name. Flat colour supplies the hierarchy: ordinary panels and controls
+have no visible borders or drop shadows. Keep the product focused on helping
+friends compare journeys and choose dinner together.
 
-1. **Make the next action clear.** Add a position, invite friends, compare places, get directions. Give the current task one high-emphasis action.
-2. **Keep the interface quiet.** Neutral surfaces, graphite text, deliberate spacing. Color identifies people or communicates feedback.
-3. **Show the reason.** Explain ranking, distinguish estimates from calculated times, and show both total and longest drive.
-4. **Make participation forgiving.** A nearby town is enough. Search always provides an alternative to geolocation and map clicks.
-5. **Design every state.** Empty, pending, refreshing, successful, unavailable, and failed states are part of each component.
+The supplied reference is an HTML export despite its Markdown filename. Its
+Toca Boca design summary and palette are the reference; the surrounding
+GradientDeck website chrome is not part of the app design.
 
-## Visual language
+## Palette
 
-White panels on a cool off-white canvas; near-black primary actions; a restrained blue focus/selection accent. No decorative gradients, glass, warm rustic palette, food emoji controls, oversized marketing headers, or shadows on every card. Phosphor regular SVG icons, 20px, with text labels retained for actions. The share action uses Lucide Share (not Share2); dinner loading and refresh use Lucide LoaderCircle with an 800ms rotation, stopped under reduced motion while the status text remains. Use text for categories where icons do not add meaning. Fraunces 600 gives the app name and display titles a distinct serif voice (24px on phones, 28px on desktop). Section headings, forms, metadata, and buttons use the system sans stack. The Latin subset is self-hosted through Fontsource with font-display: swap, with no runtime font-service request.
-
-### Color roles
-
-| Semantic role | Light | Dark | Use |
-| --- | --- | --- | --- |
-| Canvas | #f6f7f8 | #111315 | Page background |
-| Surface | #ffffff | #1b1e22 | Cards, fields, dialogs |
-| Subtle surface | #eef0f3 | #272c33 | Secondary controls, quiet grouping |
-| Text | #191c20 | #f4f5f6 | Headings, names, values |
-| Muted text | #5c6470 | #adb5c1 | Supporting copy; still readable |
-| Divider | #dce0e5 | #414955 | Decorative boundaries only |
-| Surface boundary | #eaedf0 | #2c323a | Quiet panel and search-results outlines |
-| Field edge | #848c98 | #626e7d | Input bottom boundary |
-| Control border | #7b8491 | #707b8a | Inputs and required control boundaries |
-| Action / on action | #22262c / #ffffff | #eef0f3 / #191c20 | Primary CTA |
-| Accent | #2458bd | #9bbcff | Focus, text links, selected indicator |
-| Selected surface | #edf3ff | #1e304e | Selected place or option |
-| Success / subtle | #23643b / #edf7ef | #9dd9ae / #182c20 | Saved status |
-| Warning / subtle | #805300 / #fff6df | #f0cd7a / #302714 | Estimated times |
-| Danger / subtle | #b32935 / #fff0f1 | #ffacb4 / #361e23 | Field errors, failed requests |
-
-Colors are implemented in `tokens.scss`. Components consume semantic or component variables, never raw palette values. Dark mode remaps semantic roles; it is not a CSS inversion. Cards and search results share `--color-surface-border` through component aliases. These decorative outlines stay quiet; `--color-control-border` is reserved for boundaries needed to identify controls. Search results float beneath the search field, outside document flow, using `--color-elevated`, `--shadow-overlay`, and `--layer-popover`. Opening and closing the popup must not move surrounding content. The list has a viewport-bounded scroll area and dismisses on Escape, outside press, or focus leaving the search group. It has no row dividers, with a prominent place name and muted, wrapping address details. Each result retains a visible inset keyboard focus indicator. Fields use the canvas fill, a quiet perimeter, and a contrasting bottom edge; the bottom edge defines the control boundary without a strong four-sided box. Focus has a 3px outline with 3px offset. Muted text is not disabled text. Disabled controls use native disabled semantics, explicit styling, and nearby explanation where the reason is not obvious.
-
-### Typography
-
-| Role | Size / line height | Weight | Use |
-| --- | --- | --- | --- |
-| Display | 40 / 48 | 600 | Design-system presentation only |
-| Page title | 28 / 36 | 600 | App title or task title |
-| Section title | 20 / 28 | 600 | Group, results, position |
-| Body | 16 / 24 | 400 | Inputs, descriptions, primary content |
-| Primary action | 16 / 24 | 600 | Main buttons and directions |
-| Label | 14 / 20 | 600 | Secondary buttons, field labels |
-| Supporting | 14 / 20 | 400 | Metadata, validation, helper text |
-| Caption | 12 / 16 | 500 | Nonessential annotations only |
-
-Use rem equivalents in implementation. Allow zoom and text enlargement. Names and addresses wrap; never shrink important text to fit. Keep prose below 65 characters per line. Use tabular numerals for durations and distances. Heading tracking may be -0.02em; body keeps normal spacing.
-
-### Geometry and motion
-
-Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64px. Use 8px between related controls, 16px within groups, 16px compact card padding on phones and tablets, 24px comfortable card padding in the desktop planning column, 32px between sections. Use `--panel-padding-compact` and `--panel-padding-comfortable` through the contextual `--panel-padding` alias. The documentation preview switches to comfortable padding at its two-column breakpoint. A 4px exception supports tight label/helper relationships. Radius: 6px small, 10px controls, 14px panels, full only for badges and avatars. Use a 1px divider, 2px selected border, and one overlay shadow for menus/dialogs. Ordinary cards have no shadow.
-
-Control minimum height 44px; comfortable controls 48px. The project adopts 44×44 CSS px targets for touch friendliness, including map buttons. At least 8px between neighboring actions. Motion: 120ms feedback, 180ms surface/state changes, 240ms overlay entrance, 160ms exit. Animate color/opacity/transform, not layout dimensions. Reduced motion removes movement, smooth map flights, and animated loading; loading text remains.
-
-## Tokens and ownership
-
-`tokens.scss` is the canonical browser-compatible SCSS source. Its CSS-only syntax lets the existing Next.js stack consume it without adding Sass. `preview.scss` and `app.scss` use the same convention. Run `npm run design-system:build` to generate the shared public token stylesheet, preview CSS, and `app/globals.css`. This also runs automatically before development and production builds. Run `npm run design-system:check` to check generated-file drift and light/dark contrast pairs (the contrast check requires Python 3). Do not edit generated CSS.
-
-The generator resolves breakpoint variables in media queries at build time because browser media queries cannot resolve CSS custom properties. It also derives the system dark-theme media query from the explicit dark token block, avoiding a second palette. Both app and preview follow the OS theme when no `data-theme` attribute is set; explicit light/dark attributes override it. When editing sources during an already-running dev session, rerun `npm run design-system:build` for hot reload.
-
-Layout declarations such as `0`, `100%`, `1fr`, grid placement, and transforms remain structural CSS. Design decisions (color, type, spacing, radius, control sizes, layout breakpoint, route widths, layers, and animation timing) live in tokens. Map zoom levels, geographic bounds and polling intervals are behavior settings, not visual tokens. Third-party Leaflet base styles remain vendor-owned; app-facing chrome is themed through semantic overrides.
-
-Layers: `--neutral-*` and size values are primitives; `--color-*` are theme-specific semantic roles; `--button-*`, `--field-*`, `--panel-*` are component aliases. Resolve changes at the lowest shared layer. Do not add a new value for each screen. A documented page override may be added under `pages/` only when a real requirement differs from this master.
-
-## Component contracts
-
-| Component | Anatomy and behavior | Required states |
+| Token | Colour | Use |
 | --- | --- | --- |
-| Button | Verb-led text; optional decorative SVG; primary graphite, secondary subtle, tertiary text; 44px minimum | Default, hover, pressed, focus-visible, disabled, busy with specific label; reserve busy width |
-| Field | Visible label, input, helper/error linked by aria-describedby; validate on blur or submit | Empty, filled, hover, focus, invalid via aria-invalid, read-only, disabled |
-| Position picker | Name + location search + explicit search action; current location secondary; selected location summary; save action | No position, searching, no matches, unsaved draft, saving, saved, permission denied, search unavailable |
-| Search results | Submit-based search with a square icon-only submit button labeled “Search locations”, a spinner during search, and a list of native result buttons; keep full address available | Loading, results, empty, failure; if later changed to autocomplete, implement the full combobox keyboard contract |
-| Strategy choice | Native radio group in a fieldset; two options with shared explanation; arrow keys select | Least total driving, fairest drive, focus, unavailable with explanation |
-| Participant row | Initial/name, “you” text when relevant, matching map identity, drive duration | Saved, own draft, missing route; never rely on color alone |
-| Place option | Native radio within a labeled choice group; rank, name, category/town, total + longest drive | Default, hover, focus, selected, refreshing; best-ranked and user-selected are separate concepts |
-| Selected place | Name, available metadata, participant journey breakdown, directions primary | Routes pending, ready, partial failure, estimated times; external details clearly labeled |
-| Participant count | Neutral rounded chip beside the heading; system sans numerals with a contextual live label | Zero, one, plural, long count |
-| Badge | Short text, optional icon; no interactive styling for plain status | Saved, estimated, updating; full labels wrap |
-| Inline message | Icon + cause + recovery; errors near affected task; warning never implies failure | Informational, success, warning, danger |
-| Shared header | Name, compact purpose, invite and new-group actions; contextual copy confirmation | Link ready, copied, share unavailable, copy failed |
-| Dialog | Only for a consequential action that needs a decision; clear title, close/cancel | Keyboard trap, Escape, focus restored to trigger, background inert |
+| Paper | #ffffff | Page, fields, place options |
+| Midnight Mouth | #101014 | Headings, controls, focus, map labels |
+| Sky Blue | #59acff | Position section |
+| Grass Green | #62d962 | Participants section |
+| Bubblegum Pink | #ff8cbc | Dinner suggestions and brand sticker |
+| Tangerine | #ff7040 | Reserved accent, demonstrated in the palette |
+| Sunshine Yellow | #ffe359 | Selected options and estimates |
+| Daylight | #f2f2ff | Pill labels, participant rows, floating results |
+| Ink | #0a0a0a | Pressed primary controls |
 
-Primary action progression: before joining, **Save my position**; after joining, **Invite friends**; after selecting a place, **Get directions**. Show Update position only for unsaved edits and style it as a secondary action with Cancel. Hide the update actions when the saved position is unchanged. Leave group is a quiet destructive action inside Group options. Starting a new group navigates to a new link; do not label it as deleting the old group. Venue selection changes the preview only; do not imply a booking or confirmed group agreement.
+Supporting text uses #303038 for readable contrast on every colour slab.
+Error text uses #76152f on pink. Participant colours remain darker identity
+colours so map routes and initials stay distinguishable and readable on
+white. These functional colours supplement the nine reference colours.
 
-## Map language
+The reference specifies a light theme. Both app and preview retain that
+appearance regardless of OS preference; there is no alternate dark palette.
+Both documents declare `color-scheme: only light` in CSS and initial HTML
+metadata to prevent native controls or browser auto-darkening from mixing
+appearances. The document root carries `data-theme="light"`.
 
-Tuscany uses a bundled, simplified ISTAT region boundary, including islands. A non-interactive outside mask subdues neighboring areas, and the Tuscany control restores the regional view. The map credits the boundary source and license.
+## Typography
 
-Person: circular initial/name marker. Draft: dashed ring plus “Unsaved” label. Venue: numbered pin matching list rank. Selected venue: same number with selected halo, not an unrelated trophy. The ranking algorithm's ideal point stays hidden by default or appears only under an explicitly labeled explanation; it is not a venue.
+Headings, map pins, and participant avatars use self-hosted Bricolage
+Grotesque (SIL Open Font License 1.1, licence at
+`public/fonts/bricolage-grotesque/OFL.txt`) with Arial Black / Arial Rounded
+MT Bold / Arial as loading fallbacks. The latin-subset variable file
+`public/fonts/bricolage-grotesque/BricolageGrotesque-latin-wght.woff2`
+supports weights 200–800; titles use `--weight-title: 800` with -3% tracking.
+Shared `fonts.scss`
+generates `public/design-system/fonts.css` for both app and preview;
+`font-display: swap` keeps text visible while the font loads, and both
+pages preload the same asset. Body copy requests Inter and falls back to
+the system sans stack. The UI has no third-party font-service requests.
 
-People use a stable ID → identity mapping shared by marker, route and row. Preserve identity across polling and result reordering. Supplement the ten repeating hues with visible names/initials and route labels; never promise color alone is unique. Selected routes need a contrasting under-stroke on varied map tiles. Dashed straight lines mean “route unavailable / approximate connection”, not a calculated road route. Label estimates in list and detail surfaces. The selected venue must stay distinguishable from each participant and keyboard focus.
+App title: 48px desktop, 32px mobile, 800 weight, 1 line height, -3% tracking.
+Section headings: 28px. Body and fields: 16px. Labels and metadata: 14px.
+The preview can use larger fluid display type. Keep important text wrapping
+and use tabular numerals for journey times.
 
-Map panning is optional. Every venue is selectable from the list, and every location can be entered through search. Keep zoom controls and attribution visible above fixed UI. Map colors and overlays require testing on real tiles in both themes; the schematic in the preview demonstrates identity only and is not a production basemap.
+## Geometry and interaction
 
-## Responsive composition
+Use 32px panel radii, 24px field/option radii, and fully rounded pill buttons.
+The spacing scale remains 4, 8, 12, 16, 24, 32, 48, 64px. Cards use 24px
+padding. Controls have a minimum height of 48px. Small screens stack location
+actions when their labels cannot fit comfortably beside each other.
 
-| Viewport | Layout |
-| --- | --- |
-| Below 1024px | Full-screen map under a bottom sheet with three scroll-snap detents. Low shows the title and the selected place with Directions; middle shows the place list over the map; full shows the whole planning flow in task order. Newcomers start at middle, returning members at low. Focusing a text field opens the sheet fully. The grabber is a button that cycles detents, so dragging is never required. Pin placement is an explicit mode: the sheet drops to low with an instruction, Done and Cancel; map taps never move a pin outside it. No map dialog. |
-| 1024px and above | 400px planning column and flexible map; map can be sticky; panel and page use one intentional scroll context |
+The desktop planning column is 460px. The map is sticky, inset by 16px,
+and clipped to a 32px radius. Below 1024px the map and native scroll-snap
+sheet retain their existing three detents. The sheet measures its header to
+keep the collapsed content visible as text wraps or scales.
 
-Page gutters: 16px phone, 24px tablet, 32px desktop. Documentation max width 1200px; production map workspace may fill the viewport. Do not compress the planning column below readable width. Wrap action groups and strategy descriptions. Use min-width: 0 for grid/flex children and overflow-wrap: anywhere for user-supplied names or addresses. Reserve map/loading height. If a sticky CTA is later added, reserve its full height plus safe-area inset in the content.
+Selected places and radio choices use Sunshine Yellow. Selected place
+buttons expose aria-pressed, and strategy options remain native radios.
+Keep a 3px visible focus outline with 3px offset. White map marker rings, route
+casings, and the dashed draft pin remain functional geographic identifiers;
+they are exceptions to the borderless surface treatment. Loading text,
+errors, and initials communicate meaning alongside colour.
 
-## Content and feedback
+Buttons use 120ms colour feedback. Map movement respects reduced motion;
+spinners stop rotating while their loading text remains. Search results
+float outside document flow on an opaque Daylight surface with no shadow,
+wrap long addresses, and dismiss on Escape, outside press, or focus exit.
 
-Use the existing English UI consistently until localization is implemented; keep the product name Cena in Toscana. Friendly, practical copy, short sentences, no technical service names in primary errors.
+## Source ownership and checks
 
-| Situation | Example |
-| --- | --- |
-| Location helper | A nearby town is enough. You don’t need to share your address. |
-| Unsaved position | Position set to Empoli. Save it to share with the group. |
-| Empty group | Add your position, then invite friends with this link. |
-| One participant | Showing places near you. Invite friends to compare everyone’s drive. |
-| Total strategy | Minimize everyone’s combined driving time. |
-| Fair strategy | Minimize the longest individual drive. |
-| Initial calculation | Center a 24px spinner above “Finding places to eat…” with 12px separation and 24px vertical padding. |
-| Refresh | Updating drive times… Keep old results at full opacity and label them as updating. |
-| Estimated routing | Drive times are estimates. Road routing is temporarily unavailable. |
-| Suggestions unavailable | Places are unavailable. We couldn’t load dinner suggestions. Your group and saved positions are still here. Try again. |
-| Search failure | Location search is unavailable. Try again or choose a point on the map. |
-| Save failure | Your position wasn’t saved. Check your connection and try again. |
+Edit `tokens.scss`, `fonts.scss`, `app.scss`, and `preview.scss` in this directory.
+These use browser-compatible SCSS syntax without requiring a Sass runtime.
+`build.mjs` generates `public/design-system/tokens.css`,
+`public/design-system/preview.css`, and `app/globals.css`. Do not edit generated
+CSS directly. Run `npm run design-system:build` after changing a source in an
+already-running development session. Dev and production builds regenerate
+styles automatically.
 
-Do not announce the five-second poll repeatedly. Announce meaningful changes in a polite status region; only announce an error once when it appears. Do not move focus on polling, ranking refresh, or result selection. After failed submission, focus the first invalid field, or a linked error summary when there are multiple errors. Preserve typed values on failure.
+`npm run design-system:check` checks generated-file drift and 53 contrast
+pairs, including primary and supporting text on all five candy colours.
+`npm run typecheck` checks the app. Inspect the live UI at phone and desktop
+widths and the isolated preview at `/design-system/index.html`.
 
-## Adoption and acceptance
+Colours, dimensions, timing, and typography in app styles consume tokens.
+The generator resolves the media-query breakpoint at build time, since CSS
+custom properties do not work in media queries. Participant colour aliases
+and the measured sheet peek height remain runtime values.
 
-1. Adopted: import shared tokens through `app/layout.tsx`; global app styles generate from `app.scss`. The previous palette has been removed. Map markers and SVG routes use shared participant tokens, CSS-owned sizing, and reduced-motion-aware timing.
-2. Extract Button, Field, InlineMessage, StrategyChoice, ParticipantRow, and PlaceOption primitives from the current DinnerApp markup. Keep API, ranking, group URLs, and storage behavior intact.
-3. Apply location/group layout, then ranked-list/detail layout, then map markers/routes. Replace emoji UI controls with consistent SVGs.
-4. Implement semantic radio groups, correct field labels (avoid a label wrapping a form), contextual error/status regions, and keyboard selection. Respect reduced-motion in Leaflet flyTo/flyToBounds.
-5. Validate at 375px, 768px, 1024px, 1440px, phone landscape, 200% zoom, long names/addresses, keyboard-only use, and both themes. Test empty, one-person, multi-person, loading, stale, failure, no-result, and estimate cases.
+## Product contracts
 
-Acceptance: text pairs ≥4.5:1, meaningful control boundaries ≥3:1, visible unobscured focus, no color-only status, no horizontal document overflow, no blocked zoom, reduced-motion respected, map usable without pointer precision. The build script checks declared palette pairs; it does not certify the future app's composed UI or real map tiles.
+The design adaptation preserves group links, saved positions, search,
+geolocation, map picking, participant identity, ranking strategies, route
+estimates, directions, and error/retry states. Search remains submit based
+with native result buttons. Initials identify people, numbers identify venues,
+and dashed routes distinguish approximate journeys. The interactive design
+preview uses illustrative data and does not share locations or open real
+directions.
 
-## Decision record
+## Basemap
 
-The ui-ux-pro-max searches verified Minimalism & Swiss Style and a neutral sans hierarchy as relevant. Generated fashion colors, marketing hero structure, and childlike typography were rejected as mismatches. This tailored specification is the source of truth, not unverified generated search output. Dark tokens are specified now to prevent incompatible component colors; shipping a production theme toggle remains a separate product decision. The interactive preview uses fictional venues and participants and makes no live service calls.
+The basemap uses MapLibre GL through the official Leaflet binding and
+[OpenFreeMap vector tiles](https://openfreemap.org/quick_start/). Its original
+15-layer style lives in `lib/map-style.ts` and resolves the shared CSS palette
+at map creation: Sky Blue water, green parks and woodland, pink settlements
+and buildings, yellow primary roads, orange motorways, and Midnight labels.
+Place and street labels use OpenFreeMap's Noto Sans glyph service. Labels have
+Paper halos for legibility; there are no terrain textures or POI sprites.
+
+Participant pins and list avatars share solid identity colours and light
+initials. Numbered venues are yellow, the selected venue is orange, and the
+optimum/draft markers are pink. Popups use rounded Daylight surfaces.
+
+Tuscany is only the initial viewport. There are no geographic pan bounds,
+regional outline, or exterior fade mask. Users can zoom out to level 2 and
+pan anywhere. Selecting a venue or placing an offscreen draft can focus that
+specific action; polling does not recenter an unchanged selection. The
+“Your group” button explicitly fits participants, the selected venue, and
+any draft pin. Existing Tuscany position validation and restaurant search
+scope remain product rules, independent of free map navigation.
+
+`npm run map:prepare` copies the installed MapLibre worker and license into
+ignored `public/maplibre/` assets before development and production builds.
+The worker is served from the app origin with a package-version query to
+avoid stale caches and bundler-specific worker resolution. MapLibre requires
+WebGL2. Provider, data, and route attributions stay visible on the map.

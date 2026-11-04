@@ -5,19 +5,22 @@
   "scripts": {
     "design-system:build": "node design-system/cena-in-toscana/build.mjs",
     "design-system:check": "node design-system/cena-in-toscana/build.mjs --check && python3 design-system/cena-in-toscana/build.py",
-    "predev": "npm run design-system:build",
+    "predev": "npm run design-system:build && npm run map:prepare",
     "dev": "next dev",
-    "prebuild": "npm run design-system:build",
+    "prebuild": "npm run design-system:build && npm run map:prepare",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "map:prepare": "node scripts/prepare-map.mjs"
   },
   "dependencies": {
     "@fontsource/fraunces": "^5.3.0",
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "@phosphor-icons/react": "^2.1.10",
     "alasql": "^4.22.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.67.0",
+    "maplibre-gl": "^6.16.0",
     "next": "^16.4.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

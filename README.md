@@ -27,7 +27,7 @@ services repeatedly. If the router is down, times fall back to an estimate (show
 
 ## Design system
 
-The app's clean, neutral design system is documented in
+The app's colourful, Toca Boca inspired design system from `DESIGN.md` is documented in
 [the design-system master](design-system/cena-in-toscana/MASTER.md).
 With the dev server running, open
 [the interactive component preview](http://localhost:3000/design-system/index.html).
@@ -78,3 +78,10 @@ npm run dev   # http://localhost:3000
 
 Import this repo at https://vercel.com/new (framework preset: Next.js, no env vars needed),
 or run `npx vercel` from the project folder.
+
+The map uses a custom vector style from the shared palette, rendered with
+MapLibre inside Leaflet using OpenFreeMap tiles. Map navigation is unrestricted;
+Tuscany is the initial view. “Your group” recenters on participants and the
+selected venue. Saving positions and searching for dinner remain Tuscany scoped.
+The MapLibre worker is self-hosted and prepared automatically before dev/build
+(`npm run map:prepare`); the vector basemap requires WebGL2.
