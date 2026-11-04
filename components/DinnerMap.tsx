@@ -163,12 +163,16 @@ export default function DinnerMap({
       {selected &&
         participants.map((p) => {
           const r = routeOf(p.id);
-          const approximate = !r || "error" in r;
+          // A route drawn for an old position of this person is stale: show the estimate until the new one lands.
+          const stale = r && !("error" in r) && r.path.length > 0 &&
+            (Math.abs(r.path[0][0] - p.lat) > 0.02 || Math.abs(r.path[0][1] - p.lng) > 0.02);
+          const approximate = !r || "error" in r || stale;
           const positions: [number, number][] = approximate
             ? [[p.lat, p.lng], [selected.lat, selected.lng]]
             : r.path;
           const routeClass = approximate ? "map-route map-route-approximate" : "map-route";
-          return <Fragment key={`route-${p.id}`}>
+          // Leaflet can't swap a path's className after mount, so remount when it flips dashed <-> solid.
+          return <Fragment key={`route-${p.id}-${approximate ? "approx" : "road"}`}>
             <Polyline positions={positions} pathOptions={{ className: "map-route-casing", interactive: false }} />
             <Polyline positions={positions} pathOptions={{ color: colorOf(p.id), className: routeClass }} />
           </Fragment>;

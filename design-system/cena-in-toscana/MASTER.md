@@ -103,8 +103,7 @@ Map panning is optional. Every venue is selectable from the list, and every loca
 
 | Viewport | Layout |
 | --- | --- |
-| Below 768px | Single document scroll; location, group, strategy/results in task order; a map section around 280–360px tall; no required nested scrolling or draggable sheet |
-| 768–1023px | Same document flow, wider panels; optional map beside selected-place detail only if readable |
+| Below 1024px | Full-screen map under a bottom sheet with three scroll-snap detents. Low shows the title and the selected place with Directions; middle shows the place list over the map; full shows the whole planning flow in task order. Newcomers start at middle, returning members at low. Focusing a text field opens the sheet fully. The grabber is a button that cycles detents, so dragging is never required. Pin placement is an explicit mode: the sheet drops to low with an instruction, Done and Cancel; map taps never move a pin outside it. No map dialog. |
 | 1024px and above | 400px planning column and flexible map; map can be sticky; panel and page use one intentional scroll context |
 
 Page gutters: 16px phone, 24px tablet, 32px desktop. Documentation max width 1200px; production map workspace may fill the viewport. Do not compress the planning column below readable width. Wrap action groups and strategy descriptions. Use min-width: 0 for grid/flex children and overflow-wrap: anywhere for user-supplied names or addresses. Reserve map/loading height. If a sticky CTA is later added, reserve its full height plus safe-area inset in the content.

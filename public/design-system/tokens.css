@@ -66,6 +66,7 @@
     --layer-base: 0;
     --layer-sticky: 10;
     --layer-popover: 20;
+    --layer-sheet: 30;
     --layer-modal: 40;
     --layer-toast: 50;
 }
@@ -186,8 +187,11 @@
     --focus-width: 3px;
     --focus-offset: 3px;
     --layout-planning-width: 400px;
-    --layout-map-dialog-width: 800px;
-    --layout-map-dialog-height: 80dvh;
+    --sheet-peek-height: 200px; /* fallback; the app measures the sheet's top section */
+    --sheet-middle-height: 55dvh;
+    --sheet-grabber-height: var(--space-6);
+    --sheet-handle-width: 36px;
+    --sheet-handle-height: 5px;
     --map-person-size: 36px;
     --map-venue-size: 36px;
     --map-selected-size: 44px;
