@@ -1,8 +1,9 @@
 "use client";
 
 import L from "leaflet";
-import { Fragment, useEffect, useRef } from "react";
-import { MapContainer, Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
+import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
+import { LeafletContext, createLeafletContext, type LeafletContextInterface } from "@react-leaflet/core";
+import { Marker, Popup, Polyline, useMapEvents, useMap } from "react-leaflet";
 import { CornersOutIcon, CarIcon } from "@phosphor-icons/react";
 import { getVersion, setWorkerUrl } from "maplibre-gl";
 import { maplibreGL } from "@maplibre/maplibre-gl-leaflet";
@@ -13,6 +14,39 @@ import { TUSCANY_BOUNDS } from "@/lib/geo";
 import { formatDuration, type DinnerPlace, type ParticipantRoute } from "@/lib/types";
 
 const MAP_ATTRIBUTION = '<a href="https://openfreemap.org/">OpenFreeMap</a> · © <a href="https://openmaptiles.org/">OpenMapTiles</a> · © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors · routes by <a href="https://project-osrm.org">OSRM</a>';
+
+/**
+ * react-leaflet's MapContainer removes the map whenever its effect is cleaned up, but React
+ * also cleans effects up without unmounting (StrictMode's double run, Fast Refresh, hidden
+ * Suspense boundaries) and then reconnects them to that dead map. This container keeps the
+ * map through those and removes it only once its element has really left the page.
+ */
+function MapRoot({ className, bounds, children, ...options }: L.MapOptions & {
+  className: string; bounds: L.LatLngBounds; children: ReactNode;
+}) {
+  const container = useRef<HTMLDivElement>(null);
+  const instance = useRef<L.Map | null>(null);
+  const [context, setContext] = useState<LeafletContextInterface | null>(null);
+  useEffect(() => {
+    const node = container.current!;
+    if (!instance.current) {
+      const map = new L.Map(node, options);
+      map.fitBounds(bounds);
+      instance.current = map;
+      setContext(createLeafletContext(map));
+    }
+    return () => {
+      if (node.isConnected) return;
+      instance.current?.remove();
+      instance.current = null;
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return (
+    <div className={className} ref={container}>
+      {context && <LeafletContext value={context}>{children}</LeafletContext>}
+    </div>
+  );
+}
 
 function BrandedBasemap() {
   const map = useMap();
@@ -223,7 +257,7 @@ export default function DinnerMap({
   };
 
   return (
-    <MapContainer
+    <MapRoot
       bounds={bounds}
       minZoom={2}
       maxZoom={19}
@@ -304,10 +338,10 @@ export default function DinnerMap({
           <Popup>
             <strong>{selected.name}</strong>
             <br />
-            Total {formatDuration(selected.totalS)} · longest {formatDuration(selected.maxS)}
+            Average {formatDuration(selected.totalS / Math.max(1, selected.legs.length))} · longest {formatDuration(selected.maxS)}
           </Popup>
         </Marker>
       )}
-    </MapContainer>
+    </MapRoot>
   );
 }

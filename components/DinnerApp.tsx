@@ -5,7 +5,7 @@ import { Share, LoaderCircle, Search } from "lucide-react";
 import {
   IconContext, CheckIcon, CrosshairIcon, MapTrifoldIcon,
   NavigationArrowIcon, WarningCircleIcon, ForkKnifeIcon,
-  WineIcon, BeerSteinIcon, ArrowSquareOutIcon, ArrowClockwiseIcon,
+  ArrowSquareOutIcon, ArrowClockwiseIcon,
   PlusIcon, CaretDownIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -49,6 +49,22 @@ const DETENTS: Detent[] = ["low", "middle", "full"];
 
 const directionsUrl = (pl: DinnerPlace) =>
   `https://www.google.com/maps/dir/?api=1&destination=${pl.lat},${pl.lng}&travelmode=driving`;
+
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const KIND_LABEL = { restaurant: "Restaurant", bar: "Bar", pub: "Pub" } as const;
+/** OpenStreetMap cuisine tags, tidied: "italian, italian pizza, pizza" reads "Italian pizza". */
+const cuisineLabel = (raw?: string) => {
+  if (!raw) return null;
+  const tags = [...new Set(raw.split(/[;,]/).map((t) => t.trim().replace(/_/g, " ").toLowerCase()).filter(Boolean))];
+  // Drop a tag another tag already says ("pizza" inside "italian pizza").
+  const kept = tags.filter((t) => !tags.some((o) => o !== t && o.split(" ").includes(t)));
+  return kept.length ? capitalize(kept.slice(0, 2).join(", ")) : null;
+};
+/** Always one line, so every result row has the same shape. */
+const placeDescription = (pl: DinnerPlace) =>
+  [(pl.kind === "restaurant" && cuisineLabel(pl.cuisine)) || KIND_LABEL[pl.kind], pl.town].filter(Boolean).join(" · ");
+const averageS = (pl: DinnerPlace) => pl.totalS / Math.max(1, pl.legs.length);
+const minutes = (s: number) => Math.round(s / 60);
 
 export default function DinnerApp() {
   const locationField = useRef<HTMLDivElement>(null);
@@ -484,11 +500,178 @@ export default function DinnerApp() {
     onMapClick: picking ? onMapTap : () => {},
   };
 
-  const placeKindIcon = (pl: DinnerPlace) =>
-    pl.kind === "bar" ? <WineIcon /> : pl.kind === "pub" ? <BeerSteinIcon /> : <ForkKnifeIcon />;
-  const placeTimes = (pl: DinnerPlace) => participants.length > 1
-    ? `total ${formatDuration(pl.totalS)} · longest ${formatDuration(pl.maxS)}`
-    : `${formatDuration(pl.totalS)} drive`;
+  // Each row leads with the number it was ranked by; the other one is secondary.
+  const solo = participants.length < 2;
+  const rankedS = (pl: DinnerPlace) => (strategy === "fair" ? pl.maxS : averageS(pl));
+  const metricCaption = solo ? "drive" : strategy === "fair" ? "longest drive" : "average drive";
+  const placeTimes = (pl: DinnerPlace) => `${formatDuration(rankedS(pl))} ${metricCaption}`;
+  const secondaryTimes = (pl: DinnerPlace) => {
+    if (solo || pl.legs.length === 0) return null;
+    const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
+    const who = longest.participantId === me?.id ? "You" : nameOf(longest.participantId);
+    return strategy === "fair"
+      ? `${who === "You" ? "You drive" : `${who} drives`} longest · average ${formatDuration(averageS(pl))}`
+      : `Longest: ${who}, ${formatDuration(pl.maxS)}`;
+  };
+  // Below #1, show how much longer each place is, so near-ties read as ties.
+  const bestMin = dinner?.places[0] ? minutes(rankedS(dinner.places[0])) : 0;
+  const rankLabel = (pl: DinnerPlace, i: number) => {
+    if (i === 0) return { value: formatDuration(rankedS(pl)), caption: metricCaption, spoken: "" };
+    const delta = minutes(rankedS(pl)) - bestMin;
+    return delta <= 0
+      ? { value: "Same", caption: null, spoken: " as number 1" }
+      : { value: `+${formatDuration(delta * 60)}`, caption: null, spoken: " longer than number 1" };
+  };
+  const rankBadge = (i: number, on: boolean) => (
+    <span className={on ? "rank-badge rank-badge--on" : "rank-badge"}>{i + 1}</span>
+  );
+
+  const peopleCard = (
+    <section className="card card--people">
+      <h2 className="section-heading">
+        <span>Who’s coming</span>
+        {data && (
+          <span className="count-chip" role="status" aria-atomic="true">
+            <span aria-hidden="true">{participants.length}</span>
+            <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
+          </span>
+        )}
+      </h2>
+      {!data ? (
+        // Until the server answers, an empty list would claim nobody is coming.
+        !groupError && <p className="muted small" role="status">Loading the group…</p>
+      ) : participants.length === 0 ? (
+        <p className="muted small">Nobody yet. Be the first!</p>
+      ) : (
+        <ul className="people">
+          {participants.map((p) => {
+            const leg = selected?.legs.find((l) => l.participantId === p.id);
+            const meta = [
+              p.id === me?.id ? "You" : null,
+              leg ? `${formatDuration(leg.durationS)} · ${(leg.distanceM / 1000).toFixed(0)} km` : null,
+            ].filter(Boolean).join(" · ");
+            return (
+              <li key={p.id}>
+                <span className="avatar" aria-hidden="true" style={{ "--person-color": colorOf(p.id) } as CSSProperties}>{p.name.charAt(0).toUpperCase()}</span>
+                <span className="people__name">
+                  {p.name}
+                  {meta && <span className="people__meta muted small">{meta}</span>}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
+  const placesCard = (
+    <section className="card card--places">
+      <h2>Where to eat</h2>
+      {/* With one person both rankings are the same, so there is nothing to choose. */}
+      {Boolean(dinner?.places.length) && !solo && (
+        <>
+          <fieldset className="segmented" aria-describedby="strategy-description">
+            <legend className="sr-only">Rank places by</legend>
+            <label>
+              <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
+              Least driving
+            </label>
+            <label>
+              <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
+              Fairest
+            </label>
+          </fieldset>
+          <p className="muted small" id="strategy-description">
+            {strategy === "total" ? "Ranked by average drive, by car." : "Ranked by the longest drive, by car."}
+          </p>
+        </>
+      )}
+      {dinner?.routing === "estimate" && (
+        <p className="muted small inline-meta"><WarningCircleIcon />The route service is busy, so these times are estimates.</p>
+      )}
+
+      <div role="status">
+        {dinnerState === "loading" && dinner && (
+          <div className="loading-state loading-state--refreshing">
+            <LoaderCircle className="app-icon spinner" aria-hidden="true" />
+            <p className="loading-state__text">Updating drive times…</p>
+          </div>
+        )}
+      </div>
+      {!data ? (
+        // The group is still loading; "Who's coming" already says so.
+        null
+      ) : participants.length === 0 ? (
+        <p className="muted small">Save your position to see places for dinner.</p>
+      ) : dinnerState === "loading" && !dinner ? (
+        <div className="loading-state" role="status">
+          <LoaderCircle className="app-icon spinner" aria-hidden="true" />
+          <p className="loading-state__text">Finding places to eat…</p>
+        </div>
+      ) : dinnerState === "error" ? (
+        <div className="availability-state" role="alert">
+          <div className="availability-state__heading">
+            <WarningCircleIcon />
+            <h3 className="availability-state__title">Places are unavailable</h3>
+          </div>
+          <p className="muted small availability-state__description">
+            We couldn’t load dinner suggestions. Your group and saved positions are still here.
+          </p>
+          <button className="btn ghost availability-state__retry" onClick={() => setRetry((n) => n + 1)}>
+            <ArrowClockwiseIcon />Try again
+          </button>
+        </div>
+      ) : dinner && dinner.places.length === 0 ? (
+        <p className="muted small">No restaurants or bars found in the area on OpenStreetMap.</p>
+      ) : (
+        <ol className="towns">
+          {dinner?.places.map((pl, i) => {
+            const on = i === selectedIdx;
+            const rank = rankLabel(pl, i);
+            const secondary = secondaryTimes(pl);
+            return (
+              // The selected row holds its own actions, so the highlight wraps both.
+              <li key={pl.id} className={on ? "town on" : "town"}>
+                <button className="town__select" aria-pressed={on} onClick={() => {
+                  setSelectedIdx(i);
+                  // Show the choice on the map instead of leaving it hidden under the sheet.
+                  if (detent === "full") goTo("middle");
+                }}>
+                  {rankBadge(i, on)}
+                  <span className="town__text">
+                    <span className="town-name">{pl.name}</span>
+                    <span className="muted small">{placeDescription(pl)}</span>
+                    {secondary && <span className="muted small">{secondary}</span>}
+                  </span>
+                  <span className="town-metric">
+                    <span className="town-metric__value">{rank.value}</span>
+                    {rank.caption && <span className="town-metric__caption">{rank.caption}</span>}
+                    {rank.spoken && <span className="sr-only">{rank.spoken}</span>}
+                  </span>
+                </button>
+                {on && (
+                  <div className="town__actions">
+                    <a className="btn primary" href={directionsUrl(pl)} target="_blank" rel="noreferrer">
+                      <NavigationArrowIcon />Directions
+                    </a>
+                    <a
+                      className="btn secondary"
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${pl.name} ${pl.town ?? ""}`.trim())}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Reviews & hours<ArrowSquareOutIcon />
+                    </a>
+                  </div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </section>
+  );
 
   return (
     <IconContext.Provider value={{ className: "app-icon", weight: "regular", "aria-hidden": true }}>
@@ -537,7 +720,7 @@ export default function DinnerApp() {
           ) : joined && selected ? (
             <div className="sheet-summary">
               <div className="sheet-summary__text">
-                <span className="town-name">{placeKindIcon(selected)}{selectedIdx + 1}. {selected.name}</span>
+                <span className="town-name">{rankBadge(selectedIdx, true)}{selected.name}</span>
                 <span className="muted small">{placeTimes(selected)}</span>
               </div>
               <a className="btn primary" href={directionsUrl(selected)} target="_blank" rel="noreferrer">
@@ -662,163 +845,8 @@ export default function DinnerApp() {
           {error && !picking && <p className="error" role="alert">{error}</p>}
         </section>
 
-        <section className="card card--people">
-          <h2 className="section-heading">
-            <span>Who’s coming</span>
-            {data && (
-              <span className="count-chip" role="status" aria-atomic="true">
-                <span aria-hidden="true">{participants.length}</span>
-                <span className="sr-only">{participants.length} {participants.length === 1 ? "person" : "people"} coming</span>
-              </span>
-            )}
-          </h2>
-          {!data ? (
-            // Until the server answers, an empty list would claim nobody is coming.
-            !groupError && <p className="muted small" role="status">Loading the group…</p>
-          ) : participants.length === 0 ? (
-            <p className="muted small">Nobody yet. Be the first!</p>
-          ) : (
-            <ul className="people">
-              {participants.map((p) => {
-                const leg = selected?.legs.find((l) => l.participantId === p.id);
-                const meta = [
-                  p.id === me?.id ? "You" : null,
-                  leg ? `${formatDuration(leg.durationS)} · ${(leg.distanceM / 1000).toFixed(0)} km` : null,
-                ].filter(Boolean).join(" · ");
-                return (
-                  <li key={p.id}>
-                    <span className="avatar" aria-hidden="true" style={{ "--person-color": colorOf(p.id) } as CSSProperties}>{p.name.charAt(0).toUpperCase()}</span>
-                    <span className="people__name">
-                      {p.name}
-                      {meta && <span className="people__meta muted small">{meta}</span>}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-
-        <section className="card card--places">
-          <h2>Where to eat</h2>
-          {Boolean(dinner?.places.length) && (
-            <>
-              <fieldset className="segmented" aria-describedby="strategy-description">
-                <legend>Compare places</legend>
-                <label>
-                  <input type="radio" name="strategy" value="total" checked={strategy === "total"} onChange={() => setStrategy("total")} />
-                  Least total driving
-                </label>
-                <label>
-                  <input type="radio" name="strategy" value="fair" checked={strategy === "fair"} onChange={() => setStrategy("fair")} />
-                  Fairest drive
-                </label>
-              </fieldset>
-              <p className="muted small" id="strategy-description">
-                {strategy === "total"
-                  ? "Restaurants and bars where everyone’s driving times add up to the least."
-                  : "Restaurants and bars where the longest drive is as short as possible."}{" "}
-                Times are by car on real roads.
-              </p>
-            </>
-          )}
-          {dinner?.routing === "estimate" && (
-            <p className="muted small inline-meta"><WarningCircleIcon />The route service is busy, so these times are estimates.</p>
-          )}
-
-          <div role="status">
-            {dinnerState === "loading" && dinner && (
-              <div className="loading-state loading-state--refreshing">
-                <LoaderCircle className="app-icon spinner" aria-hidden="true" />
-                <p className="loading-state__text">Updating drive times…</p>
-              </div>
-            )}
-          </div>
-          {!data ? (
-            // The group is still loading; "Who's coming" already says so.
-            null
-          ) : participants.length === 0 ? (
-            <p className="muted small">Save your position to see places for dinner.</p>
-          ) : dinnerState === "loading" && !dinner ? (
-            <div className="loading-state" role="status">
-              <LoaderCircle className="app-icon spinner" aria-hidden="true" />
-              <p className="loading-state__text">Finding places to eat…</p>
-            </div>
-          ) : dinnerState === "error" ? (
-            <div className="availability-state" role="alert">
-              <div className="availability-state__heading">
-                <WarningCircleIcon />
-                <h3 className="availability-state__title">Places are unavailable</h3>
-              </div>
-              <p className="muted small availability-state__description">
-                We couldn’t load dinner suggestions. Your group and saved positions are still here.
-              </p>
-              <button className="btn ghost availability-state__retry" onClick={() => setRetry((n) => n + 1)}>
-                <ArrowClockwiseIcon />Try again
-              </button>
-            </div>
-          ) : dinner && dinner.places.length === 0 ? (
-            <p className="muted small">No restaurants or bars found in the area on OpenStreetMap.</p>
-          ) : (
-            <ol className="towns">
-              {dinner?.places.map((pl, i) => {
-                const longest = pl.legs.reduce((a, b) => (b.durationS > a.durationS ? b : a));
-                return (
-                  <li key={pl.id}>
-                    <button className={i === selectedIdx ? "town on" : "town"} aria-pressed={i === selectedIdx} onClick={() => {
-                      setSelectedIdx(i);
-                      // Show the choice on the map instead of leaving it hidden under the sheet.
-                      if (detent === "full") goTo("middle");
-                    }}>
-                      <span className="town-name">
-                        {placeKindIcon(pl)}
-                        {pl.name}
-                      </span>
-                      <span className="muted small">
-                        {[pl.kind === "restaurant" ? pl.cuisine : pl.kind, pl.town].filter(Boolean).join(" · ")}
-                      </span>
-                      <span className="small">
-                        {participants.length > 1 ? (
-                          <>total {formatDuration(pl.totalS)} · longest {formatDuration(pl.maxS)} ({nameOf(longest.participantId)})</>
-                        ) : (
-                          <>{formatDuration(pl.totalS)} drive</>
-                        )}
-                      </span>
-                    </button>
-                    {i === selectedIdx && (
-                      <div className="row gap wrap town-actions">
-                        <a
-                          className="btn primary"
-                          href={directionsUrl(pl)}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          <NavigationArrowIcon />Directions
-                        </a>
-                        <a
-                          className="btn ghost"
-                          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${pl.name} ${pl.town ?? ""}`.trim())}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Reviews & hours<ArrowSquareOutIcon />
-                        </a>
-                        <a
-                          className="btn ghost"
-                          href={`https://www.openstreetmap.org/${pl.id}`}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          OpenStreetMap<ArrowSquareOutIcon />
-                        </a>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
-          )}
-        </section>
+        {/* Once you're in, the answer comes before the guest list. */}
+        {joined ? <>{placesCard}{peopleCard}</> : <>{peopleCard}{placesCard}</>}
 
         {groupError && <p className="error" role="alert">{groupError}</p>}
         <details className="group-options">

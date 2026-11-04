@@ -178,16 +178,20 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 .btn.primary:active { background: var(--color-action-pressed); }
 .btn.ghost:hover { background: var(--color-action-hover); }
 .btn.ghost:active { background: var(--color-action-pressed); }
+.btn.secondary { background: var(--secondary-bg); color: var(--secondary-fg); }
+.btn.secondary:hover { background: var(--secondary-hover); }
+.btn.secondary:active { background: var(--secondary-pressed); }
 .btn.quiet { background: transparent; color: var(--color-muted); }
 .btn.quiet:hover, .btn.quiet:active { background: var(--color-subtle); }
 .btn.danger-text { color: var(--color-danger); }
 .btn.danger { color: var(--color-danger); background: var(--color-danger-subtle); }
 .btn:disabled { background: var(--color-disabled-surface); color: var(--color-disabled); cursor: not-allowed; }
 .segmented { display: flex; flex-wrap: wrap; gap: var(--space-2); border: 0; padding: 0; margin: 0 0 var(--space-3); min-width: 0; }
-.segmented legend { width: 100%; margin-bottom: var(--space-2); font-size: var(--text-label); font-weight: var(--weight-strong); }
-.segmented label { display: flex; align-items: center; justify-content: center; gap: var(--space-2); flex: 1; min-height: var(--button-height); font-size: var(--text-label); padding: var(--space-2); border: 0; border-radius: var(--radius-full); background: var(--color-paper); cursor: pointer; }
-.segmented label:has(input:checked) { background: var(--color-selected); border-color: var(--color-accent); }
-.segmented input { min-height: 0; accent-color: var(--color-accent); margin: 0; }
+.segmented label { position: relative; display: flex; align-items: center; justify-content: center; flex: 1; min-height: var(--button-height); font-size: var(--text-label); padding: var(--space-2); border: 0; border-radius: var(--radius-full); background: var(--color-paper); cursor: pointer; white-space: nowrap; }
+.segmented label:has(input:checked) { background: var(--color-selected); font-weight: var(--weight-strong); }
+.segmented label:has(input:focus-visible) { outline: var(--focus-width) solid var(--color-accent); outline-offset: var(--focus-offset); }
+/* The fill already says which is chosen; the native dot stays only for keyboards and screen readers. */
+.segmented input { position: absolute; inset: 0; min-height: 0; margin: 0; opacity: 0; pointer-events: none; }
 .people, .towns { list-style: none; margin: 0; padding: 0; }
 .people { display: flex; flex-direction: column; gap: var(--space-2); }
 .people li { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--color-subtle); border-radius: var(--radius-control); overflow-wrap: anywhere; font-weight: var(--weight-medium); }
@@ -196,10 +200,51 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 .avatar { display: grid; place-items: center; flex: none; width: var(--map-person-size); height: var(--map-person-size); border-radius: var(--radius-full); background: var(--person-color, var(--color-action)); color: var(--color-on-action); border: 0; font-family: var(--font-title); font-weight: var(--weight-title); font-size: var(--text-body); }
 .swatch { width: var(--space-3); height: var(--space-3); border-radius: var(--radius-full); flex: none; }
 .towns li + li { margin-top: var(--space-3); }
-.town { width: 100%; min-height: var(--button-height); text-align: left; color: var(--color-text); cursor: pointer; display: flex; flex-direction: column; gap: var(--space-1); padding: var(--space-3); border-radius: var(--radius-control); border: 0; background: var(--color-surface); overflow-wrap: anywhere; }
-.town:hover { background: var(--color-subtle); }
-.town.on { border-color: var(--color-accent); background: var(--color-selected); box-shadow: none; }
+.town { border-radius: var(--radius-control); background: var(--color-surface); overflow: hidden; }
+.town:not(.on):has(.town__select:hover) { background: var(--color-subtle); }
+.town.on { background: var(--color-selected); }
+.town__select {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: start;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: var(--button-height);
+    padding: var(--space-3);
+    border: 0;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--color-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+}
+.town__text { display: grid; gap: var(--space-1); min-width: 0; }
 .town-name { display: flex; align-items: baseline; gap: var(--space-2); font-weight: var(--weight-strong); }
+/* Numbers that line up down the list, so the ranking scans as a column. */
+.town-metric { display: grid; justify-items: end; text-align: right; font-variant-numeric: tabular-nums; }
+.town-metric__value { font-weight: var(--weight-strong); white-space: nowrap; }
+.town-metric__caption { color: var(--color-muted); font-size: var(--text-caption); line-height: var(--leading-label); white-space: nowrap; }
+/* Same colours as the map pins: Sunshine for a ranked place, Tangerine for the chosen one. */
+.rank-badge {
+    display: inline-grid;
+    place-items: center;
+    flex: none;
+    min-width: var(--chip-min-size);
+    height: var(--chip-min-size);
+    border-radius: var(--radius-full);
+    background: var(--color-sunshine);
+    color: var(--color-midnight);
+    font-family: var(--font-title);
+    font-weight: var(--weight-title);
+    font-size: var(--text-label);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+}
+.rank-badge--on { background: var(--color-tangerine); }
+.town__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3); }
+.town__actions .btn { flex: 1 1 auto; }
 
 /* #MAP */
 .map-marker { background: transparent; border: 0; }
@@ -245,7 +290,6 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 }
 .spinner { animation: spinner-rotate var(--duration-spinner) linear infinite; }
 @keyframes spinner-rotate { to { transform: rotate(360deg); } }
-.town-name .app-icon { align-self: flex-start; }
 .inline-meta { display: flex; align-items: baseline; gap: var(--space-2); }
 .section-heading { display: flex; align-items: center; gap: var(--space-3); }
 .count-chip {
@@ -290,7 +334,6 @@ input { min-width: 0; min-height: var(--field-height); font-size: var(--text-bod
 .location-options .btn { flex: 1; min-width: max-content; }
 .position-actions { display: flex; flex-direction: column; gap: var(--space-2); }
 .position-actions--editing { flex-direction: row; flex-wrap: wrap; }
-.town-actions { padding: var(--space-3) 0; }
 .group-options__toggle {
     display: flex;
     align-items: center;

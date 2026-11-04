@@ -113,6 +113,11 @@
 /* #COMPONENT-ALIASES */
 :root {
     --button-bg: var(--color-action);
+    /* The lesser of two actions side by side: a light pill beside a Midnight one. */
+    --secondary-bg: var(--color-daylight);
+    --secondary-fg: var(--color-text);
+    --secondary-hover: #e4e4f4;
+    --secondary-pressed: #d6d6ea;
     --button-fg: var(--color-on-action);
     --button-height: 48px;
     --button-radius: var(--radius-full);
